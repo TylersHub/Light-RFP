@@ -12,31 +12,27 @@ Command-line scraper for the LightRFP take-home assessment. It fetches live ESBD
 
 ## Setup
 
-These steps assume you are working from the project root.
+These steps assume you have already cloned or downloaded the repo and opened a terminal in the project root, which is the folder that contains `README.md`, `requirements.txt`, and `scraper.py`.
 
 ### 1. Open PowerShell in the project folder
 
-Make sure you're in the project root.
+```
+cd path\to\Light-RFP
+```
 
 ### 2. Create a virtual environment inside this repo
 
-This creates a local `.venv` directory in the project root.
+This creates a local `venv` directory in the project root.
 
-```powershell
+```
 python -m venv venv
 ```
 
 ### 3. Activate the virtual environment
 
-In PowerShell:
+In Terminal:
 
-```powershell
-venv\Scripts\Activate.ps1
 ```
-
-In Command Prompt:
-
-```cmd
 venv\Scripts\activate
 ```
 
@@ -44,19 +40,19 @@ If activation works, your terminal prompt will usually start with `(venv)`.
 
 ### 4. Install dependencies
 
-```bash
+```
 python -m pip install -r requirements.txt
 ```
 
 ### 5. Run the scraper
 
-```bash
+```
 python scraper.py
 ```
 
 Optional flags:
 
-```bash
+```
 python scraper.py --top-n 20 --max-candidates 24 --output output/esbd_results.html
 ```
 
@@ -68,8 +64,8 @@ After the script finishes, open:
 
 ## Quick Start
 
-```powershell
-cd "c:\(path)\Light-RFP"
+```
+cd path\to\Light-RFP
 python -m venv .venv
 venv\Scripts\Activate
 python -m pip install -r requirements.txt

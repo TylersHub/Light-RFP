@@ -41,12 +41,11 @@ class ESBDScraper:
         agency_lookup = build_agency_lookup(listing_soup)
         listing_records = parse_listing_page(listing_soup, self.base_url)
 
-        open_records = [
-            record for record in listing_records if record.status.strip() in OPEN_STATUSES
-        ][:max_candidates]
-
         enriched: list[Solicitation] = []
-        for record in open_records:
+        for record in listing_records:
+            if record.status.strip() not in OPEN_STATUSES:
+                continue
+
             detail_html = self.fetch_html(record.detail_url)
             detail_soup = BeautifulSoup(detail_html, "lxml")
             enriched_record = parse_detail_page(
@@ -55,7 +54,12 @@ class ESBDScraper:
                 agency_lookup=agency_lookup,
                 base_url=self.base_url,
             )
+
+            if enriched_record.status.strip() not in OPEN_STATUSES:
+                continue
+
             enriched.append(enriched_record)
+            if len(enriched) >= max_candidates:
+                break
 
         return enriched
-
