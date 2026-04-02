@@ -1,0 +1,33 @@
+.DS_Store
+Thumbs.db
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Local editor and tool metadata
+.idea/
+.vscode/
+
+# Project-generated artifacts
+data/raw/
+data/processed/
+data/pdfs/
+logs/
+.codex-temp/
+
+# Local configuration
+.env
+.env.*
