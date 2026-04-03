@@ -53,6 +53,33 @@ def main() -> int:
         ),
         reverse=True,
     )
+
+    refreshed_ranked = []
+    for solicitation in ranked[: max(args.top_n * 2, args.top_n)]:
+        needs_refresh = any(
+            [
+                not solicitation.brief_description,
+                not solicitation.contact_name,
+                not solicitation.contact_email,
+                not solicitation.contact_phone,
+            ]
+        )
+        if needs_refresh:
+            refreshed = scraper.enrich_solicitation(solicitation)
+            if refreshed:
+                solicitation = score_solicitation(refreshed)
+        refreshed_ranked.append(solicitation)
+
+    remaining_ranked = ranked[len(refreshed_ranked) :]
+    ranked = sorted(
+        [*refreshed_ranked, *remaining_ranked],
+        key=lambda item: (
+            item.relevance_score,
+            item.posting_date or "",
+            item.due_datetime or "",
+        ),
+        reverse=True,
+    )
     top_results = ranked[: args.top_n]
 
     output_path = Path(args.output)

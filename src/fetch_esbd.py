@@ -18,7 +18,11 @@ from .config import (
     USER_AGENT,
 )
 from .models import Solicitation
-from .parse_esbd import parse_detail_page, parse_service_listing_response
+from .parse_esbd import (
+    parse_detail_page,
+    parse_detail_payload,
+    parse_service_listing_response,
+)
 
 
 class ESBDScraper:
@@ -27,6 +31,9 @@ class ESBDScraper:
         self.listing_url = LISTING_URL
         self.session = self._build_session()
         self.service_url = self.discover_service_url()
+        self.details_service_url = self.service_url.replace(
+            "ESBD.Service.ss", "ESBD.Details.Service.ss"
+        )
 
     def _build_session(self) -> requests.Session:
         session = requests.Session()
@@ -89,20 +96,69 @@ class ESBDScraper:
         response.raise_for_status()
         return response.json()
 
+    def is_detail_parse_complete(
+        self, enriched_record: Solicitation, fallback: Solicitation
+    ) -> bool:
+        has_contact = any(
+            [
+                enriched_record.contact_name,
+                enriched_record.contact_email,
+                enriched_record.contact_phone,
+                enriched_record.bid_response_email,
+            ]
+        )
+        has_description = bool(enriched_record.description or enriched_record.brief_description)
+        has_classification = bool(enriched_record.category_classification)
+        has_attachments = bool(enriched_record.attachment_urls)
+
+        improved_over_fallback = any(
+            [
+                enriched_record.category_classification
+                and enriched_record.category_classification != fallback.category_classification,
+                enriched_record.description,
+                has_contact,
+                has_attachments,
+            ]
+        )
+
+        return improved_over_fallback and (has_contact or has_description or has_attachments or has_classification)
+
+    def fetch_detail_payload(self, solicitation_id: str) -> dict:
+        response = self.session.get(
+            self.details_service_url,
+            params={"identification": solicitation_id, "urlRoot": "esbd"},
+            timeout=REQUEST_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+        return response.json()
+
     def enrich_solicitation(self, record: Solicitation) -> Solicitation | None:
         if not record.detail_url:
             return record
 
-        detail_html = self.fetch_html(record.detail_url)
-        detail_soup = BeautifulSoup(detail_html, "lxml")
-        enriched_record = parse_detail_page(
-            detail_soup=detail_soup,
-            fallback=record,
-            base_url=self.base_url,
-        )
-        if enriched_record.status.strip() not in OPEN_STATUSES:
-            return None
-        return enriched_record
+        last_record = record
+        for _ in range(3):
+            try:
+                detail_payload = self.fetch_detail_payload(record.solicitation_id)
+                enriched_record = parse_detail_payload(
+                    payload=detail_payload,
+                    fallback=record,
+                    base_url=self.base_url,
+                )
+            except (requests.RequestException, ValueError):
+                detail_html = self.fetch_html(record.detail_url)
+                detail_soup = BeautifulSoup(detail_html, "lxml")
+                enriched_record = parse_detail_page(
+                    detail_soup=detail_soup,
+                    fallback=record,
+                    base_url=self.base_url,
+                )
+            if enriched_record.status.strip() not in OPEN_STATUSES:
+                return None
+            last_record = enriched_record
+            if self.is_detail_parse_complete(enriched_record, record):
+                return enriched_record
+        return last_record
 
     def collect_solicitations(self, max_candidates: int | None = None) -> list[Solicitation]:
         enriched: list[Solicitation] = []
