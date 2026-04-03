@@ -21,6 +21,8 @@
         .results { display:grid; gap:18px; }
         .card { padding:22px; }
         .card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:14px; }
+        .title-row { display:flex; align-items:flex-start; gap:14px; }
+        .rank-badge { min-width:52px; height:52px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.1rem; color:var(--accent); background:#edf5f6; border:1px solid #c9dfe1; flex-shrink:0; }
         .card-title a { color:var(--ink); text-decoration:none; }
         .card-title a:hover { color:var(--accent); }
         .badges { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; }
@@ -54,7 +56,10 @@
             {% for item in results %}
             <article class="card">
                 <div class="card-head">
-                    <div class="card-title"><h2><a href="{{ item.detail_url }}">{{ item.title }}</a></h2></div>
+                    <div class="title-row">
+                        <div class="rank-badge">#{{ loop.index }}</div>
+                        <div class="card-title"><h2><a href="{{ item.detail_url }}">{{ item.title }}</a></h2></div>
+                    </div>
                     <div class="badges">
                         <span class="badge score">Score {{ "%.2f"|format(item.relevance_score) }}</span>
                         {% for category in item.matched_categories %}
