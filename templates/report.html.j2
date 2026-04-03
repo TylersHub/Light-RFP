@@ -89,16 +89,6 @@
                     </ul>
                 </div>
                 {% endif %}
-                {% if item.score_explanation %}
-                <div>
-                    <h3>Why it ranked</h3>
-                    <ul class="list">
-                        {% for reason in item.score_explanation %}
-                        <li>{{ reason }}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                {% endif %}
             </article>
             {% endfor %}
         </div>
