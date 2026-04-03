@@ -1,6 +1,7 @@
 beautifulsoup4
 jinja2
 lxml
+pypdf
 python-dateutil
 rapidfuzz
 requests

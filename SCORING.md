@@ -9,6 +9,7 @@ Each solicitation is turned into a single text profile using:
 - title
 - class or item code
 - solicitation description
+- extracted PDF text when PDF parsing succeeds
 - attachment names
 - attachment descriptions
 - other extracted detail-page text used in the raw text blob
@@ -24,6 +25,7 @@ For each LightRFP category, the scorer calculates:
 - title keyword hits
 - classification keyword hits
 - description keyword hits
+- PDF keyword hits
 - attachment keyword hits
 - direct category phrase hits
 - fuzzy similarity bonus
@@ -35,6 +37,7 @@ score =
   5 * title_hits
   + 4 * classification_hits
   + 3 * description_hits
+  + 2 * pdf_hits
   + 2 * attachment_hits
   + 3 * direct_category_hits
   + fuzzy_bonus
@@ -76,6 +79,7 @@ The weights reflect confidence:
 - Title matches are weighted highest because titles are usually the clearest summary of the work.
 - Classification matches are also strong because ESBD class/item codes often describe the procurement domain directly.
 - Description matches are useful but a little noisier.
+- Extracted PDF text can add useful evidence, but it is weighted below title, classification, and description because PDF text can be verbose or messy.
 - Attachment-name matches are helpful, but weaker than title and classification text.
 - Direct category phrase matches give a small boost when the solicitation text explicitly uses the same wording as a LightRFP category.
 - Fuzzy matching helps catch near-matches that do not use the exact same phrasing.
@@ -156,7 +160,7 @@ This scorer is intentionally simple and reviewer-friendly, but it has limitation
 
 - It is keyword-driven, so it can miss relevant bids that use unusual wording.
 - It can still over-score generic construction solicitations if they overlap multiple broad categories.
-- It does not yet use extracted PDF body text, which would improve recall and ranking quality.
+- PDF extraction only runs on a smaller high-confidence subset, so not every open solicitation benefits from attachment-body text.
 - Negative filtering is lightweight and may need tuning as more live solicitations are observed.
 
 ## Future improvements

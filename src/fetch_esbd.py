@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 import re
 from urllib.parse import urljoin
 
@@ -14,8 +15,10 @@ from .config import (
     ESBD_SERVICE_URL,
     LISTING_URL,
     MAX_DETAIL_WORKERS,
+    MAX_PDF_WORKERS,
     OPEN_STATUSES,
     OPEN_STATUS_FILTER,
+    PDF_DOWNLOAD_DIR,
     REQUEST_TIMEOUT_SECONDS,
     USER_AGENT,
 )
@@ -25,6 +28,7 @@ from .parse_esbd import (
     parse_detail_payload,
     parse_service_listing_response,
 )
+from .pdf_utils import enrich_solicitation_pdfs
 
 
 class ESBDScraper:
@@ -37,6 +41,8 @@ class ESBDScraper:
             "ESBD.Service.ss", "ESBD.Details.Service.ss"
         )
         self.max_detail_workers = MAX_DETAIL_WORKERS
+        self.max_pdf_workers = MAX_PDF_WORKERS
+        self.pdf_download_dir = Path(PDF_DOWNLOAD_DIR)
 
     def _build_session(self) -> requests.Session:
         session = requests.Session()
@@ -222,7 +228,53 @@ class ESBDScraper:
             }
             for future in as_completed(future_map):
                 index = future_map[future]
-                enriched[index] = future.result()
+                try:
+                    enriched[index] = future.result()
+                except Exception:
+                    enriched[index] = records[index]
+
+        return [record for record in enriched if record]
+
+    def enrich_solicitation_with_pdfs(
+        self,
+        record: Solicitation,
+        session: requests.Session | None = None,
+    ) -> Solicitation:
+        client = session or self.session
+        return enrich_solicitation_pdfs(
+            session=client,
+            record=record,
+            base_dir=self.pdf_download_dir,
+            timeout_seconds=REQUEST_TIMEOUT_SECONDS,
+        )
+
+    def enrich_solicitations_with_pdfs(
+        self,
+        records: list[Solicitation],
+        max_workers: int | None = None,
+    ) -> list[Solicitation]:
+        if not records:
+            return []
+
+        worker_count = max_workers or self.max_pdf_workers
+        worker_count = max(1, min(worker_count, len(records)))
+
+        def task(record: Solicitation) -> Solicitation:
+            session = self._build_session()
+            return self.enrich_solicitation_with_pdfs(record, session=session)
+
+        enriched: list[Solicitation | None] = [None] * len(records)
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            future_map = {
+                executor.submit(task, record): index
+                for index, record in enumerate(records)
+            }
+            for future in as_completed(future_map):
+                index = future_map[future]
+                try:
+                    enriched[index] = future.result()
+                except Exception:
+                    enriched[index] = records[index]
 
         return [record for record in enriched if record]
 

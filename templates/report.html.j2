@@ -75,7 +75,7 @@
                         <div class="rank-badge">#{{ loop.index }}</div>
                         <div class="card-title">
                             <h2><a href="{{ item.detail_url }}">{{ item.title }}</a></h2>
-                            <p class="card-subtitle">{{ item.brief_description or item.description or "No description available." }}</p>
+                            <p class="card-subtitle">{{ item.brief_description or "No description available." }}</p>
                         </div>
                     </div>
                     <div class="badges">
@@ -141,14 +141,32 @@
                         <h3 class="section-title">Classification</h3>
                         <p class="classification">{{ item.category_classification or "Not listed" }}</p>
                     </section>
+                    {% if item.ai_summary %}
+                    <section class="panel">
+                        <h3 class="section-title">AI Summary from PDF</h3>
+                        <p class="classification">{{ item.ai_summary }}</p>
+                    </section>
+                    {% endif %}
                     {% if item.attachment_urls %}
                     <section class="panel attachments">
                         <h3 class="section-title">Attachments</h3>
+                        {% if item.pdf_extraction_summary %}
+                        <p class="classification">{{ item.pdf_extraction_summary }}</p>
+                        {% endif %}
                         <ul class="list">
                             {% for attachment in item.attachment_urls %}
-                            <li><a href="{{ attachment.url }}">{{ attachment.name }}</a>{% if attachment.description %} - {{ attachment.description }}{% endif %}</li>
+                            <li>
+                                <a href="{{ attachment.url }}">{{ attachment.name }}</a>
+                                {% if attachment.description %} - {{ attachment.description }}{% endif %}
+                                {% if attachment.is_pdf and attachment.pdf_extraction_status %}
+                                <div><strong>PDF Extraction:</strong> {{ attachment.pdf_extraction_status }}{% if attachment.pdf_page_count %} | {{ attachment.pdf_page_count }} page(s){% endif %}</div>
+                                {% endif %}
+                            </li>
                             {% endfor %}
                         </ul>
+                        {% if item.pdf_text_preview %}
+                        <p class="classification"><strong>PDF Text Preview:</strong> {{ item.pdf_text_preview }}</p>
+                        {% endif %}
                     </section>
                     {% endif %}
                 </div>
@@ -159,7 +177,7 @@
             <h2>Methodology</h2>
             <p>This report uses the live paginated ESBD backend service to collect the full current open-solicitation result set, scores that full listing set, and then enriches a generous shortlist through the ESBD details service to extract required fields such as title, solicitation ID, contact information, posting date, due date, classification, and attachment links.</p>
             <p>Relevance is determined by weighted keyword and fuzzy matching against the vendor service categories from the take-home brief. Matches in solicitation titles and classification codes count more heavily than weaker description-only signals, while clearly unrelated terms such as software-only or legal-service signals are penalized.</p>
-            <p>This implementation favors a straightforward HTTP-first scraper because the required ESBD data is available through the public site and its live JSON services without browser automation. Some additional relevance signals may still live inside attached PDFs, which are linked here but not yet parsed in this MVP.</p>
+            <p>This implementation favors a straightforward HTTP-first scraper because the required ESBD data is available through the public site and its live JSON services without browser automation. For a smaller high-confidence subset of candidates, the scraper also downloads PDF attachments, classifies them as text-based or likely scanned based on extractable text, and folds extracted PDF text back into ranking. If a Gemini API key is supplied, the final results can also include AI-generated summaries based on that PDF text.</p>
         </section>
     </div>
 </body>

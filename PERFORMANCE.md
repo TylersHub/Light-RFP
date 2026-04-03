@@ -28,15 +28,18 @@ That approach maximized completeness early, but it was inefficient because many 
 
 ## New Approach
 
-The scraper now uses a two-stage pipeline:
+The scraper now uses a staged pipeline:
 
 1. Fetch and score the full live listing set using the ESBD listing service
 2. Sort those listing-level records by relevance
 3. Fully enrich only a generous shortlist of likely contenders using the ESBD details service
 4. Re-score the enriched shortlist
-5. Output the top 20
+5. Download and parse PDF attachments only for a smaller top-tier subset
+6. Re-score the PDF-enriched records
+7. Optionally generate AI summaries only for the final report results
+8. Output the top 20
 
-This keeps full-portal coverage during the ranking stage while avoiding unnecessary detail requests for weak candidates.
+This keeps full-portal coverage during the ranking stage while avoiding unnecessary detail requests, PDF downloads, and AI calls for weak candidates.
 
 ## Why This Is Still Safe
 
@@ -57,8 +60,10 @@ This optimization is intentionally conservative.
   - description
   - attachments
   - addendum text
+- PDF extraction is only used on a smaller top-tier subset, so attachment parsing improves ranking quality without forcing the scraper to download every bid package on every run.
+- AI summarization is only used on the final report results, so optional LLM usage stays narrow and cost-controlled.
 
-In the current configuration, the scraper enriches `160` candidates for a `top 20` report. That is intentionally wider than necessary to reduce the risk of excluding a result that becomes more relevant once detail data is added.
+In the current configuration, the scraper enriches `160` detail candidates for a `top 20` report, then runs PDF extraction on a smaller `40`-record subset. That is intentionally wider than necessary to reduce the risk of excluding a result that becomes more relevant once richer text is added.
 
 ## Additional Improvement
 
@@ -77,9 +82,9 @@ These numbers came from live runs against ESBD on `April 3, 2026`. Exact runtime
 
 ## Trade-Off
 
-The main trade-off is that the final enrichment stage no longer runs against every single open solicitation.
+The main trade-off is that the richer enrichment stages no longer run against every single open solicitation.
 
-Instead, it runs against a large, relevance-ranked shortlist. For this take-home, that is a better balance of:
+Instead, detail enrichment, PDF extraction, and optional AI summarization run against relevance-ranked shortlists. For this take-home, that is a better balance of:
 
 - full live coverage
 - relevance quality
