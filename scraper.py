@@ -4,6 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from src.config import DETAIL_CANDIDATE_MULTIPLIER, MIN_DETAIL_CANDIDATES
 from src.fetch_esbd import ESBDScraper
 from src.render_html import render_report
 from src.score_relevance import score_solicitation
@@ -28,7 +29,7 @@ def parse_args() -> argparse.Namespace:
         "--max-candidates",
         type=int,
         default=None,
-        help="Optional cap on how many live ESBD solicitations to enrich before ranking.",
+        help="Optional cap on how many live ESBD listing records to analyze before ranking.",
     )
     return parser.parse_args()
 
@@ -38,14 +39,16 @@ def main() -> int:
     scraper = ESBDScraper()
 
     try:
-        solicitations = scraper.collect_solicitations(max_candidates=args.max_candidates)
+        listing_solicitations = scraper.collect_listing_solicitations(
+            max_candidates=args.max_candidates
+        )
     except Exception as exc:  # pragma: no cover
         print(f"Scrape failed: {exc}", file=sys.stderr)
         return 1
 
-    scored = [score_solicitation(solicitation) for solicitation in solicitations]
-    ranked = sorted(
-        scored,
+    pre_scored = [score_solicitation(solicitation) for solicitation in listing_solicitations]
+    pre_ranked = sorted(
+        pre_scored,
         key=lambda item: (
             item.relevance_score,
             item.posting_date or "",
@@ -53,26 +56,21 @@ def main() -> int:
         ),
         reverse=True,
     )
+    detail_candidate_count = min(
+        len(pre_ranked),
+        max(args.top_n * DETAIL_CANDIDATE_MULTIPLIER, MIN_DETAIL_CANDIDATES),
+    )
 
-    refreshed_ranked = []
-    for solicitation in ranked[: max(args.top_n * 2, args.top_n)]:
-        needs_refresh = any(
-            [
-                not solicitation.brief_description,
-                not solicitation.contact_name,
-                not solicitation.contact_email,
-                not solicitation.contact_phone,
-            ]
+    try:
+        detailed_candidates = scraper.enrich_solicitations(
+            pre_ranked[:detail_candidate_count]
         )
-        if needs_refresh:
-            refreshed = scraper.enrich_solicitation(solicitation)
-            if refreshed:
-                solicitation = score_solicitation(refreshed)
-        refreshed_ranked.append(solicitation)
+    except Exception as exc:  # pragma: no cover
+        print(f"Detail enrichment failed: {exc}", file=sys.stderr)
+        return 1
 
-    remaining_ranked = ranked[len(refreshed_ranked) :]
     ranked = sorted(
-        [*refreshed_ranked, *remaining_ranked],
+        [score_solicitation(solicitation) for solicitation in detailed_candidates],
         key=lambda item: (
             item.relevance_score,
             item.posting_date or "",
@@ -86,7 +84,7 @@ def main() -> int:
     render_report(
         results=top_results,
         output_path=output_path,
-        total_candidates=len(scored),
+        total_candidates=len(pre_scored),
         top_n=args.top_n,
         source_url=scraper.listing_url,
     )

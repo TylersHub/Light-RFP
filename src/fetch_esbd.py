@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import re
 from urllib.parse import urljoin
 
@@ -12,6 +13,7 @@ from .config import (
     BASE_URL,
     ESBD_SERVICE_URL,
     LISTING_URL,
+    MAX_DETAIL_WORKERS,
     OPEN_STATUSES,
     OPEN_STATUS_FILTER,
     REQUEST_TIMEOUT_SECONDS,
@@ -34,6 +36,7 @@ class ESBDScraper:
         self.details_service_url = self.service_url.replace(
             "ESBD.Service.ss", "ESBD.Details.Service.ss"
         )
+        self.max_detail_workers = MAX_DETAIL_WORKERS
 
     def _build_session(self) -> requests.Session:
         session = requests.Session()
@@ -49,8 +52,9 @@ class ESBDScraper:
         session.mount("http://", adapter)
         return session
 
-    def fetch_html(self, url: str) -> str:
-        response = self.session.get(url, timeout=REQUEST_TIMEOUT_SECONDS)
+    def fetch_html(self, url: str, session: requests.Session | None = None) -> str:
+        client = session or self.session
+        response = client.get(url, timeout=REQUEST_TIMEOUT_SECONDS)
         response.raise_for_status()
         return response.text
 
@@ -123,8 +127,13 @@ class ESBDScraper:
 
         return improved_over_fallback and (has_contact or has_description or has_attachments or has_classification)
 
-    def fetch_detail_payload(self, solicitation_id: str) -> dict:
-        response = self.session.get(
+    def fetch_detail_payload(
+        self,
+        solicitation_id: str,
+        session: requests.Session | None = None,
+    ) -> dict:
+        client = session or self.session
+        response = client.get(
             self.details_service_url,
             params={"identification": solicitation_id, "urlRoot": "esbd"},
             timeout=REQUEST_TIMEOUT_SECONDS,
@@ -132,21 +141,27 @@ class ESBDScraper:
         response.raise_for_status()
         return response.json()
 
-    def enrich_solicitation(self, record: Solicitation) -> Solicitation | None:
+    def enrich_solicitation(
+        self,
+        record: Solicitation,
+        session: requests.Session | None = None,
+    ) -> Solicitation | None:
         if not record.detail_url:
             return record
 
         last_record = record
         for _ in range(3):
             try:
-                detail_payload = self.fetch_detail_payload(record.solicitation_id)
+                detail_payload = self.fetch_detail_payload(
+                    record.solicitation_id, session=session
+                )
                 enriched_record = parse_detail_payload(
                     payload=detail_payload,
                     fallback=record,
                     base_url=self.base_url,
                 )
             except (requests.RequestException, ValueError):
-                detail_html = self.fetch_html(record.detail_url)
+                detail_html = self.fetch_html(record.detail_url, session=session)
                 detail_soup = BeautifulSoup(detail_html, "lxml")
                 enriched_record = parse_detail_page(
                     detail_soup=detail_soup,
@@ -160,8 +175,10 @@ class ESBDScraper:
                 return enriched_record
         return last_record
 
-    def collect_solicitations(self, max_candidates: int | None = None) -> list[Solicitation]:
-        enriched: list[Solicitation] = []
+    def collect_listing_solicitations(
+        self, max_candidates: int | None = None
+    ) -> list[Solicitation]:
+        listings: list[Solicitation] = []
         current_page = 1
         total_pages = 1
 
@@ -174,15 +191,41 @@ class ESBDScraper:
             for record in listing_records:
                 if record.status.strip() not in OPEN_STATUSES:
                     continue
-
-                enriched_record = self.enrich_solicitation(record)
-                if not enriched_record:
-                    continue
-
-                enriched.append(enriched_record)
-                if max_candidates is not None and len(enriched) >= max_candidates:
-                    return enriched
+                listings.append(record)
+                if max_candidates is not None and len(listings) >= max_candidates:
+                    return listings
 
             current_page += 1
 
-        return enriched
+        return listings
+
+    def enrich_solicitations(
+        self,
+        records: list[Solicitation],
+        max_workers: int | None = None,
+    ) -> list[Solicitation]:
+        if not records:
+            return []
+
+        worker_count = max_workers or self.max_detail_workers
+        worker_count = max(1, min(worker_count, len(records)))
+
+        def task(record: Solicitation) -> Solicitation | None:
+            session = self._build_session()
+            return self.enrich_solicitation(record, session=session)
+
+        enriched: list[Solicitation | None] = [None] * len(records)
+        with ThreadPoolExecutor(max_workers=worker_count) as executor:
+            future_map = {
+                executor.submit(task, record): index
+                for index, record in enumerate(records)
+            }
+            for future in as_completed(future_map):
+                index = future_map[future]
+                enriched[index] = future.result()
+
+        return [record for record in enriched if record]
+
+    def collect_solicitations(self, max_candidates: int | None = None) -> list[Solicitation]:
+        listings = self.collect_listing_solicitations(max_candidates=max_candidates)
+        return self.enrich_solicitations(listings)

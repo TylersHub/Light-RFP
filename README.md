@@ -6,7 +6,7 @@ Command-line scraper for the LightRFP take-home assessment. It fetches live ESBD
 
 - Fetches current ESBD solicitation listings from `https://www.txsmartbuy.gov/esbd`
 - Treats `Posted` and `Addendum Posted` solicitations as currently open opportunities
-- Visits each solicitation detail page to extract the required metadata
+- Uses the ESBD details service to enrich the strongest candidates with the required metadata
 - Scores each opportunity against the LightRFP vendor-service categories
 - Analyzes the full set of open ESBD solicitations exposed by the live paginated ESBD service by default
 - Outputs the top 20 ranked results as `output/esbd_results.html`
@@ -63,6 +63,8 @@ Optional flags:
 python scraper.py --top-n 20 --max-candidates 50 --output output/esbd_results.html
 ```
 
+`--max-candidates` limits how many live ESBD listing records are analyzed during the initial ranking stage.
+
 ### 6. Open the generated HTML report
 
 After the script finishes, open:
@@ -81,13 +83,13 @@ python scraper.py
 
 ## Methodology
 
-I began with the public ESBD page specified in the assignment: `https://www.txsmartbuy.gov/esbd`. After inspecting the site behavior, I found that the search UI is backed by a paginated JSON service, so the scraper now uses that live ESBD service for complete listing coverage instead of relying on only the visible HTML results.
+I began with the public ESBD page specified in the assignment: `https://www.txsmartbuy.gov/esbd`. After inspecting the site behavior, I found that the search UI is backed by a paginated JSON listing service and a structured details service, so the scraper uses those live ESBD services instead of relying on only the visible HTML results.
 
-The scraper requests every page of currently open ESBD solicitations from the live backend service, follows each solicitation detail page, extracts the minimum required fields, and scores each opportunity against the vendor-service categories from the take-home prompt. By default, it analyzes the full live open-solicitation set before ranking the top 20. The score uses weighted keyword and fuzzy matching across title, classification, description, and attachment names, then applies penalties to clearly unrelated software-only, medical, legal, or insurance-oriented bids.
+The scraper requests every page of currently open ESBD solicitations from the live listing service, scores the full live open-solicitation set, and then enriches a generous shortlist of the strongest candidates through the ESBD details service before producing the final top 20. This keeps full-portal coverage while avoiding hundreds of unnecessary detail requests. The score uses weighted keyword and fuzzy matching across title, classification, description, and attachment names, then applies penalties to clearly unrelated software-only, medical, legal, or insurance-oriented bids.
 
 Current trade-offs:
 
-- The scraper now uses the live paginated ESBD service for listing coverage, but the detail extraction step still depends on the current public detail-page HTML structure.
+- The shortlist-first approach is much faster, but it assumes the strongest relevance signals are already visible in the ESBD listing data, with details serving mainly as refinement.
 - Attachment files are linked but not yet downloaded and parsed.
 - The scraper discovers the ESBD service path from the live site bundle and falls back to a known service path, but a major Texas SmartBuy frontend redesign could still require a small update.
 
