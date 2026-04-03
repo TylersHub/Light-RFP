@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LightRFP ESBD Report</title>
     <style>
-        :root { --bg:#f4f1ea; --panel:#fffdf8; --ink:#1d2a31; --muted:#5d6a71; --accent:#0f6a73; --accent-soft:#d8ecee; --line:#d9d0c3; --good:#305f3b; }
+        :root { --bg:#f4f1ea; --panel:#fffdf8; --panel-soft:#fbf8f1; --ink:#1d2a31; --muted:#5d6a71; --accent:#0f6a73; --accent-soft:#d8ecee; --line:#d9d0c3; --good:#305f3b; }
         * { box-sizing: border-box; }
         body { margin:0; font-family:Georgia, "Times New Roman", serif; color:var(--ink); background:radial-gradient(circle at top right, #efe2c6 0, transparent 30%), linear-gradient(180deg, #f6f1e7 0%, #f1ede5 100%); }
         .page { max-width:1180px; margin:0 auto; padding:32px 20px 48px; }
@@ -13,29 +13,44 @@
         .hero { padding:28px; margin-bottom:24px; }
         h1, h2, h3 { margin:0; line-height:1.1; }
         h1 { font-size:clamp(2rem, 4vw, 3.3rem); letter-spacing:0.02em; }
+        h2 { font-size:1.45rem; }
+        h3 { font-size:0.95rem; letter-spacing:0.04em; text-transform:uppercase; color:var(--muted); }
         .subtitle { margin-top:12px; color:var(--muted); font-size:1.05rem; max-width:60rem; }
         .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:14px; margin-top:24px; }
-        .stat { padding:16px; background:#fbf8f1; border-radius:14px; border:1px solid var(--line); }
+        .stat { padding:16px; background:var(--panel-soft); border-radius:14px; border:1px solid var(--line); }
         .stat-label { color:var(--muted); font-size:0.85rem; text-transform:uppercase; letter-spacing:0.08em; }
         .stat-value { display:block; margin-top:6px; font-size:1.5rem; font-weight:bold; }
         .results { display:grid; gap:18px; }
-        .card { padding:22px; }
-        .card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:14px; }
+        .card { padding:24px; }
+        .card-head { display:flex; justify-content:space-between; align-items:flex-start; gap:18px; margin-bottom:18px; }
         .title-row { display:flex; align-items:flex-start; gap:14px; }
         .rank-badge { min-width:52px; height:52px; border-radius:16px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size:1.1rem; color:var(--accent); background:#edf5f6; border:1px solid #c9dfe1; flex-shrink:0; }
         .card-title a { color:var(--ink); text-decoration:none; }
         .card-title a:hover { color:var(--accent); }
+        .card-subtitle { margin-top:10px; color:var(--muted); font-size:0.98rem; line-height:1.5; }
         .badges { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; }
         .badge { padding:7px 11px; border-radius:999px; font-size:0.86rem; font-weight:bold; background:var(--accent-soft); color:var(--accent); }
         .badge.score { background:#e5f2e7; color:var(--good); }
-        .meta { display:grid; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); gap:10px 18px; margin:16px 0; padding:16px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
-        .meta strong { display:block; font-size:0.82rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px; }
-        .description { font-size:1rem; line-height:1.6; }
-        .list { margin:12px 0 0; padding-left:18px; }
+        .card-body { display:grid; gap:18px; }
+        .info-grid { display:grid; grid-template-columns:1.1fr 0.9fr; gap:18px; }
+        .panel { background:var(--panel-soft); border:1px solid var(--line); border-radius:16px; padding:18px; }
+        .panel + .panel { margin-top:0; }
+        .detail-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px 18px; margin-top:14px; }
+        .detail-item strong { display:block; font-size:0.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
+        .detail-item span, .detail-item div { line-height:1.5; }
+        .section-title { margin-bottom:12px; }
+        .description { font-size:1rem; line-height:1.7; margin:0; }
+        .classification { font-size:0.97rem; line-height:1.65; color:var(--ink); margin:0; }
+        .links { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
+        .link-chip { display:inline-flex; align-items:center; padding:9px 12px; border-radius:999px; border:1px solid #c9dfe1; background:#edf5f6; color:var(--accent); text-decoration:none; font-weight:bold; font-size:0.9rem; }
+        .link-chip:hover { background:#e6f1f2; }
+        .list { margin:10px 0 0; padding-left:18px; }
+        .list li { margin-bottom:8px; line-height:1.55; }
         .section { padding:24px; margin-top:28px; }
         .section p, .section li { color:var(--muted); line-height:1.6; }
         .attachments a { color:var(--accent); }
-        @media (max-width:700px) { .card-head { flex-direction:column; } .badges { justify-content:flex-start; } }
+        @media (max-width:880px) { .info-grid { grid-template-columns:1fr; } }
+        @media (max-width:700px) { .card-head { flex-direction:column; } .badges { justify-content:flex-start; } .card { padding:20px; } }
     </style>
 </head>
 <body>
@@ -58,7 +73,10 @@
                 <div class="card-head">
                     <div class="title-row">
                         <div class="rank-badge">#{{ loop.index }}</div>
-                        <div class="card-title"><h2><a href="{{ item.detail_url }}">{{ item.title }}</a></h2></div>
+                        <div class="card-title">
+                            <h2><a href="{{ item.detail_url }}">{{ item.title }}</a></h2>
+                            <p class="card-subtitle">{{ item.brief_description or item.description or "No description available." }}</p>
+                        </div>
                     </div>
                     <div class="badges">
                         <span class="badge score">Score {{ "%.2f"|format(item.relevance_score) }}</span>
@@ -67,28 +85,73 @@
                         {% endfor %}
                     </div>
                 </div>
-                <div class="meta">
-                    <div><strong>Solicitation ID</strong>{{ item.solicitation_id }}</div>
-                    <div><strong>Agency</strong>{{ item.agency_name or item.agency_number }}</div>
-                    <div><strong>Status</strong>{{ item.status }}</div>
-                    <div><strong>Posted</strong>{{ item.posting_date }}</div>
-                    <div><strong>Due</strong>{{ item.due_date }} {{ item.due_time }}</div>
-                    <div><strong>Classification</strong>{{ item.category_classification or "Not listed" }}</div>
-                    <div><strong>Contact</strong>{{ item.contact_name or "Not listed" }}</div>
-                    <div><strong>Email</strong>{{ item.contact_email or item.bid_response_email or "Not listed" }}</div>
-                    <div><strong>Phone</strong>{{ item.contact_phone or "Not listed" }}</div>
+                <div class="card-body">
+                    <div class="info-grid">
+                        <section class="panel">
+                            <h3 class="section-title">Solicitation Overview</h3>
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <strong>Solicitation ID</strong>
+                                    <span>{{ item.solicitation_id }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Agency</strong>
+                                    <span>{{ item.agency_name or item.agency_number }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Status</strong>
+                                    <span>{{ item.status }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Posted</strong>
+                                    <span>{{ item.posting_date }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Due Date</strong>
+                                    <span>{{ item.due_date or "Not listed" }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Due Time</strong>
+                                    <span>{{ item.due_time or "Not listed" }}</span>
+                                </div>
+                            </div>
+                            <div class="links">
+                                <a class="link-chip" href="{{ item.detail_url }}">Open ESBD Listing</a>
+                            </div>
+                        </section>
+                        <section class="panel">
+                            <h3 class="section-title">Contact Information</h3>
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <strong>Contact</strong>
+                                    <span>{{ item.contact_name or "Not listed" }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Email</strong>
+                                    <span>{{ item.contact_email or item.bid_response_email or "Not listed" }}</span>
+                                </div>
+                                <div class="detail-item">
+                                    <strong>Phone</strong>
+                                    <span>{{ item.contact_phone or "Not listed" }}</span>
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                    <section class="panel">
+                        <h3 class="section-title">Classification</h3>
+                        <p class="classification">{{ item.category_classification or "Not listed" }}</p>
+                    </section>
+                    {% if item.attachment_urls %}
+                    <section class="panel attachments">
+                        <h3 class="section-title">Attachments</h3>
+                        <ul class="list">
+                            {% for attachment in item.attachment_urls %}
+                            <li><a href="{{ attachment.url }}">{{ attachment.name }}</a>{% if attachment.description %} - {{ attachment.description }}{% endif %}</li>
+                            {% endfor %}
+                        </ul>
+                    </section>
+                    {% endif %}
                 </div>
-                <p class="description">{{ item.brief_description or item.description or "No description available." }}</p>
-                {% if item.attachment_urls %}
-                <div class="attachments">
-                    <h3>Attachments</h3>
-                    <ul class="list">
-                        {% for attachment in item.attachment_urls %}
-                        <li><a href="{{ attachment.url }}">{{ attachment.name }}</a>{% if attachment.description %} - {{ attachment.description }}{% endif %}</li>
-                        {% endfor %}
-                    </ul>
-                </div>
-                {% endif %}
             </article>
             {% endfor %}
         </div>
