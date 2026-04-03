@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 import re
 from urllib.parse import urljoin
 
@@ -94,10 +95,61 @@ def parse_listing_page(soup: BeautifulSoup, base_url: str) -> list[Solicitation]
     return rows
 
 
+def parse_service_listing_response(
+    payload: dict,
+    base_url: str,
+) -> tuple[list[Solicitation], int]:
+    rows: list[Solicitation] = []
+    lines = payload.get("lines") or []
+    records_per_page = int(payload.get("recordsPerPage") or len(lines) or 24)
+    total_records = int(payload.get("totalRecordsFound") or len(lines))
+    total_pages = max(1, math.ceil(total_records / records_per_page))
+
+    for line in lines:
+        title = normalize_whitespace(line.get("title", ""))
+        solicitation_id = normalize_whitespace(line.get("solicitationId", ""))
+        status = normalize_whitespace(line.get("statusName", ""))
+        agency_number = normalize_whitespace(line.get("agencyNumber", ""))
+        agency_name = normalize_whitespace(line.get("agencyName", "")) or agency_number
+        due_date = normalize_whitespace(line.get("responseDue", ""))
+        due_time = normalize_whitespace(line.get("responseTime", ""))
+        category_classification = normalize_whitespace(line.get("nigpCodes", ""))
+        detail_url = urljoin(base_url, f"/esbd/{solicitation_id}") if solicitation_id else ""
+        raw_blob = normalize_whitespace(
+            " ".join(
+                [
+                    title,
+                    solicitation_id,
+                    status,
+                    agency_name,
+                    category_classification,
+                ]
+            )
+        )
+
+        rows.append(
+            Solicitation(
+                title=title,
+                solicitation_id=solicitation_id,
+                status=status,
+                agency_number=agency_number,
+                agency_name=agency_name,
+                posting_date=safe_parse_date(line.get("postingDate", "")),
+                due_date=due_date,
+                due_time=due_time,
+                due_datetime=safe_parse_date(f"{due_date} {due_time}".strip()),
+                category_classification=category_classification,
+                detail_url=detail_url,
+                raw_text_blob=raw_blob,
+            )
+        )
+
+    return rows, total_pages
+
+
 def parse_detail_page(
     detail_soup: BeautifulSoup,
     fallback: Solicitation,
-    agency_lookup: dict[str, str],
     base_url: str,
 ) -> Solicitation:
     title_tag = detail_soup.select_one(".esbd-result-title h4")
@@ -150,8 +202,10 @@ def parse_detail_page(
     due_date = values.get("Response Due Date", fallback.due_date)
     due_time = values.get("Response Due Time", fallback.due_time)
     due_datetime = safe_parse_date(f"{due_date} {due_time}".strip())
-    category_classification = values.get("Class/Item Code", "")
-    agency_name = agency_lookup.get(agency_number, agency_number)
+    category_classification = values.get(
+        "Class/Item Code", fallback.category_classification
+    )
+    agency_name = fallback.agency_name or agency_number
     brief_description = first_sentences(description)
 
     raw_blob = " ".join(

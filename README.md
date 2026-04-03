@@ -8,6 +8,7 @@ Command-line scraper for the LightRFP take-home assessment. It fetches live ESBD
 - Treats `Posted` and `Addendum Posted` solicitations as currently open opportunities
 - Visits each solicitation detail page to extract the required metadata
 - Scores each opportunity against the LightRFP vendor-service categories
+- Analyzes the full set of open ESBD solicitations exposed by the live paginated ESBD service by default
 - Outputs the top 20 ranked results as `output/esbd_results.html`
 
 ## Setup
@@ -22,21 +23,27 @@ cd path\to\Light-RFP
 
 ### 2. Create a virtual environment inside this repo
 
-This creates a local `venv` directory in the project root.
+This creates a local `.venv` directory in the project root.
 
 ```
-python -m venv venv
+python -m venv .venv
 ```
 
 ### 3. Activate the virtual environment
 
-In Terminal:
+In PowerShell:
 
 ```
-venv\Scripts\activate
+.venv\Scripts\Activate.ps1
 ```
 
-If activation works, your terminal prompt will usually start with `(venv)`.
+In Command Prompt:
+
+```
+.venv\Scripts\activate.bat
+```
+
+If activation works, your terminal prompt will usually start with `(.venv)`.
 
 ### 4. Install dependencies
 
@@ -53,7 +60,7 @@ python scraper.py
 Optional flags:
 
 ```
-python scraper.py --top-n 20 --max-candidates 24 --output output/esbd_results.html
+python scraper.py --top-n 20 --max-candidates 50 --output output/esbd_results.html
 ```
 
 ### 6. Open the generated HTML report
@@ -66,21 +73,21 @@ After the script finishes, open:
 
 ```
 cd path\to\Light-RFP
-python -m venv venv
-venv\Scripts\Activate
+python -m venv .venv
+.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 python scraper.py
 ```
 
 ## Methodology
 
-I began with the public ESBD page specified in the assignment: `https://www.txsmartbuy.gov/esbd`. The site returns solicitation listings and detail content in server-rendered HTML, so an HTTP-first scraper is enough for the MVP and avoids unnecessary browser automation.
+I began with the public ESBD page specified in the assignment: `https://www.txsmartbuy.gov/esbd`. After inspecting the site behavior, I found that the search UI is backed by a paginated JSON service, so the scraper now uses that live ESBD service for complete listing coverage instead of relying on only the visible HTML results.
 
-The scraper pulls listing rows from multiple live ESBD result views, follows each solicitation detail page, extracts the minimum required fields, and scores each opportunity against the vendor-service categories from the take-home prompt. The score uses weighted keyword and fuzzy matching across title, classification, description, and attachment names, then applies penalties to clearly unrelated software-only, medical, legal, or insurance-oriented bids.
+The scraper requests every page of currently open ESBD solicitations from the live backend service, follows each solicitation detail page, extracts the minimum required fields, and scores each opportunity against the vendor-service categories from the take-home prompt. By default, it analyzes the full live open-solicitation set before ranking the top 20. The score uses weighted keyword and fuzzy matching across title, classification, description, and attachment names, then applies penalties to clearly unrelated software-only, medical, legal, or insurance-oriented bids.
 
 Current trade-offs:
 
-- This MVP broadens coverage by combining multiple live ESBD listing views and deduplicating them, but it still does not fully reverse-engineer ESBD pagination or export behavior.
+- The scraper now uses the live paginated ESBD service for listing coverage, but the detail extraction step still depends on the current public detail-page HTML structure.
 - Attachment files are linked but not yet downloaded and parsed.
-- Agency names are resolved from the listing-page agency selector when available, otherwise the member number is shown.
+- The scraper discovers the ESBD service path from the live site bundle and falls back to a known service path, but a major Texas SmartBuy frontend redesign could still require a small update.
 

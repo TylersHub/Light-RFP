@@ -27,8 +27,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--max-candidates",
         type=int,
-        default=100,
-        help="Maximum number of listing results to enrich across multiple live ESBD listing views.",
+        default=None,
+        help="Optional cap on how many live ESBD solicitations to enrich before ranking.",
     )
     return parser.parse_args()
 
