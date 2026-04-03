@@ -23,27 +23,27 @@ cd path\to\Light-RFP
 
 ### 2. Create a virtual environment inside this repo
 
-This creates a local `.venv` directory in the project root.
+This creates a local `venv` directory in the project root.
 
 ```
-python -m venv .venv
+python -m venv venv
 ```
 
 ### 3. Activate the virtual environment
 
-In PowerShell:
+In most Windows terminals, this works:
 
 ```
-.venv\Scripts\Activate.ps1
+venv\Scripts\activate
 ```
 
-In Command Prompt:
+If PowerShell blocks script execution, use:
 
 ```
-.venv\Scripts\activate.bat
+venv\Scripts\Activate.ps1
 ```
 
-If activation works, your terminal prompt will usually start with `(.venv)`.
+If activation works, your terminal prompt will usually start with `(venv)`.
 
 ### 4. Install dependencies
 
@@ -73,8 +73,8 @@ After the script finishes, open:
 
 ```
 cd path\to\Light-RFP
-python -m venv .venv
-.venv\Scripts\Activate.ps1
+python -m venv venv
+venv\Scripts\activate
 python -m pip install -r requirements.txt
 python scraper.py
 ```
