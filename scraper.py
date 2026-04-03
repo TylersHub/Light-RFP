@@ -27,8 +27,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--max-candidates",
         type=int,
-        default=24,
-        help="Maximum number of listing results to enrich from the ESBD listing page.",
+        default=100,
+        help="Maximum number of listing results to enrich across multiple live ESBD listing views.",
     )
     return parser.parse_args()
 
@@ -69,4 +69,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

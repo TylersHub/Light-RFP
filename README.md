@@ -66,7 +66,7 @@ After the script finishes, open:
 
 ```
 cd path\to\Light-RFP
-python -m venv .venv
+python -m venv venv
 venv\Scripts\Activate
 python -m pip install -r requirements.txt
 python scraper.py
@@ -76,10 +76,11 @@ python scraper.py
 
 I began with the public ESBD page specified in the assignment: `https://www.txsmartbuy.gov/esbd`. The site returns solicitation listings and detail content in server-rendered HTML, so an HTTP-first scraper is enough for the MVP and avoids unnecessary browser automation.
 
-The scraper pulls listing rows, follows each solicitation detail page, extracts the minimum required fields, and scores each opportunity against the vendor-service categories from the take-home prompt. The score uses weighted keyword and fuzzy matching across title, classification, description, and attachment names, then applies penalties to clearly unrelated software-only, medical, legal, or insurance-oriented bids.
+The scraper pulls listing rows from multiple live ESBD result views, follows each solicitation detail page, extracts the minimum required fields, and scores each opportunity against the vendor-service categories from the take-home prompt. The score uses weighted keyword and fuzzy matching across title, classification, description, and attachment names, then applies penalties to clearly unrelated software-only, medical, legal, or insurance-oriented bids.
 
 Current trade-offs:
 
-- This MVP relies on the currently visible public ESBD listing rather than reverse-engineering every pagination or export path.
+- This MVP broadens coverage by combining multiple live ESBD listing views and deduplicating them, but it still does not fully reverse-engineer ESBD pagination or export behavior.
 - Attachment files are linked but not yet downloaded and parsed.
 - Agency names are resolved from the listing-page agency selector when available, otherwise the member number is shown.
+
