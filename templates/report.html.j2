@@ -37,7 +37,9 @@
         .panel + .panel { margin-top:0; }
         .detail-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px 18px; margin-top:14px; }
         .detail-item strong { display:block; font-size:0.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
-        .detail-item span, .detail-item div { line-height:1.5; }
+        .detail-item span, .detail-item div { line-height:1.5; overflow-wrap:anywhere; word-break:break-word; }
+        .classification { overflow-wrap:anywhere; word-break:break-word; }
+        a { overflow-wrap:anywhere; word-break:break-word; }
         .section-title { margin-bottom:12px; }
         .description { font-size:1rem; line-height:1.7; margin:0; }
         .classification { font-size:0.97rem; line-height:1.65; color:var(--ink); margin:0; }
@@ -143,7 +145,7 @@
                     </section>
                     {% if item.ai_summary %}
                     <section class="panel">
-                        <h3 class="section-title">Summary from PDF</h3>
+                        <h3 class="section-title">AI Summary</h3>
                         <p class="classification">{{ item.ai_summary }}</p>
                     </section>
                     {% endif %}
@@ -164,9 +166,6 @@
                             </li>
                             {% endfor %}
                         </ul>
-                        {% if item.pdf_text_preview %}
-                        <p class="classification"><strong>PDF Text Preview:</strong> {{ item.pdf_text_preview }}</p>
-                        {% endif %}
                     </section>
                     {% endif %}
                 </div>
