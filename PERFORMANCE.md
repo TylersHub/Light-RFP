@@ -1,94 +1,98 @@
 # Performance Notes
 
-This document explains the performance optimization made to the ESBD scraper and why the current approach is faster while still staying accurate enough for the take-home.
+This document explains the current performance optimizations in the ESBD scraper and why the newer flow is faster without dropping the accuracy safeguards that matter for the take-home.
 
-## Summary
+## Main bottlenecks that were fixed
 
-The original end-to-end pipeline was correct in spirit, but it was doing too much expensive work:
+The scraper had three major performance costs:
 
-- It fetched the full live ESBD listing set
-- It then enriched every open solicitation with full detail data
-- Only after that did it rank results and keep the top 20
+1. It fetched ESBD listing pages one at a time.
+2. It could re-fetch the same detail payload more than once for the same solicitation.
+3. It re-parsed downloaded PDFs on every run, even when the files were already on disk.
 
-Because the live ESBD open-solicitation set was `632` records during testing on `April 3, 2026`, this meant the scraper was making hundreds of detail requests even though the final report only shows `20` results.
+For AI-enabled runs, there was a fourth issue:
 
-## Root Cause
+4. The Gemini batch request was too constrained on output tokens, which increased the chance of retries or weak responses.
 
-The slowest part of the pipeline was detail enrichment, not HTML generation.
+## Current pipeline
 
-The old flow looked like this:
+The scraper now uses this staged flow:
 
-1. Fetch every page of the ESBD listing service
-2. For every open solicitation, call the details endpoint
-3. Parse and enrich all records
-4. Score all enriched records
-5. Keep the top 20
+1. Fetch the full open ESBD listing set from the live paginated service.
+2. Score the full listing set.
+3. Detail-enrich a large shortlist of likely contenders.
+4. Re-score that enriched shortlist.
+5. Download and parse PDFs for a smaller top-tier subset.
+6. Re-score again with PDF text included.
+7. Generate AI summaries only for the final top-20 report results when enabled.
+8. Render the HTML report.
 
-That approach maximized completeness early, but it was inefficient because many low-relevance records were fully enriched even though they had no realistic chance of appearing in the final report.
+This keeps full listing coverage while limiting the expensive detail, PDF, and AI work to records that can realistically affect the final report.
 
-## New Approach
+## What changed
 
-The scraper now uses a staged pipeline:
+### Parallel listing-page collection
 
-1. Fetch and score the full live listing set using the ESBD listing service
-2. Sort those listing-level records by relevance
-3. Fully enrich only a generous shortlist of likely contenders using the ESBD details service
-4. Re-score the enriched shortlist
-5. Download and parse PDF attachments only for a smaller top-tier subset
-6. Re-score the PDF-enriched records
-7. Optionally generate AI summaries only for the final report results
-8. Output the top 20
+The ESBD listing service is paginated, so fetching all open solicitations serially was taking most of the runtime by itself. The scraper now fetches page 1 first to discover the total number of pages, then requests the remaining pages in parallel and restores the original page order before continuing.
 
-This keeps full-portal coverage during the ranking stage while avoiding unnecessary detail requests, PDF downloads, and AI calls for weak candidates.
+### Single-pass detail enrichment plus local caching
 
-## Why This Is Still Safe
+Detail enrichment now does one structured detail fetch per solicitation instead of looping over the same payload repeatedly. Successful detail payloads are cached locally under `data/processed/detail_cache/` for a limited time, so repeated runs do not keep re-requesting unchanged records.
 
-This optimization is intentionally conservative.
+### Cached PDF extraction results
 
-- The scraper still analyzes the full open ESBD listing set
-- The shortlist is much larger than the final output size
-- The listing service already contains strong relevance signals such as:
-  - title
-  - status
-  - agency
-  - due date/time
-  - NIGP/classification codes
-- The details service is still used before final output, so top results still get:
-  - contact name
-  - contact email
-  - contact phone
-  - description
-  - attachments
-  - addendum text
-- PDF extraction is only used on a smaller top-tier subset, so attachment parsing improves ranking quality without forcing the scraper to download every bid package on every run.
-- AI summarization is only used on the final report results, so optional LLM usage stays narrow and cost-controlled.
+Downloaded PDFs were already being reused from disk, but their text extraction was being repeated every run. The scraper now stores a small JSON sidecar next to each downloaded PDF with:
 
-In the current configuration, the scraper enriches `160` detail candidates for a `top 20` report, then runs PDF extraction on a smaller `40`-record subset. That is intentionally wider than necessary to reduce the risk of excluding a result that becomes more relevant once richer text is added.
+- extractable text
+- extraction status
+- scanned/image-based flag
+- page count
 
-## Additional Improvement
+If the local PDF file has not changed and the cache is still fresh, the scraper reuses that extraction result immediately.
 
-The shortlist enrichment step now runs in a modest parallel batch instead of purely serial detail requests.
+### Better-scoped AI summarization
 
-This improves runtime without becoming overly aggressive toward the source system.
+Gemini summaries still only run for the final report results. The summarizer now uses:
 
-## Measured Result
+- a shorter per-record context budget
+- a larger batch character budget
+- a lower minimum inter-request delay
+- a batch output-token budget sized to the number of summaries requested
 
-Observed live runtime during development:
+That makes the AI step faster and reduces needless retries.
 
-- Before optimization: about `527` seconds
-- After optimization: about `70` seconds
+## Why the optimizations are still safe
 
-These numbers came from live runs against ESBD on `April 3, 2026`. Exact runtimes will vary depending on network conditions and the size of the current open-solicitation set.
+- The scraper still analyzes the full live open listing set from ESBD.
+- Detail enrichment still happens before final output for a much larger set than the final 20.
+- PDF extraction still happens before the final ranking is locked.
+- Cached detail and PDF data are only reused for a limited time, which keeps repeat runs fast without making the scraper permanently stale.
+- If a parallel page fetch fails, the scraper falls back to refetching that page directly.
 
-## Trade-Off
+## Measured results
 
-The main trade-off is that the richer enrichment stages no longer run against every single open solicitation.
+Observed live runtimes on April 3, 2026:
 
-Instead, detail enrichment, PDF extraction, and optional AI summarization run against relevance-ranked shortlists. For this take-home, that is a better balance of:
+- Earlier optimized version, before the latest cache and pagination work:
+  - about `2 minutes` without AI
+  - about `3 minutes` with AI
+- Current version after the latest optimizations:
+  - about `15 seconds` without AI on a warm cache run
+  - about `26 seconds` with AI on a warm cache run
 
-- full live coverage
-- relevance quality
-- runtime
-- reviewer experience
+One representative live run printed these stage timings:
 
-If this were extended into a production system, the shortlist size could be made configurable or adapted dynamically based on score distribution.
+- listing collection: `8.5s`
+- initial scoring: `0.7s`
+- detail enrichment: `0.1s`
+- PDF enrichment: `0.6s`
+- final scoring: `4.5s`
+- AI summarization for 20 report results: `11.0s`
+
+Exact runtimes will vary with network conditions, the number of currently open ESBD solicitations, Gemini response time, and whether local caches are already populated.
+
+## Trade-offs
+
+- The first run on a clean machine is still slower than a repeat run because it has to build the detail and PDF caches.
+- Cached data is intentionally temporary, so repeat-run speed comes from reusing recent work rather than pretending the source never changes.
+- The shortlist-first design is a practical performance choice, but it assumes the strongest early relevance signals are already visible in listing metadata before full enrichment.

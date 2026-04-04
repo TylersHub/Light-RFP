@@ -141,9 +141,9 @@ After scoring every category:
 
 This gives the report both a rank and a short explanation of why the match happened.
 
-## Score explanations in the HTML report
+## Score explanations
 
-The HTML report includes short explanations such as:
+The scorer still generates internal score-explanation details such as:
 
 - `title hits=2`
 - `classification hits=1`
@@ -152,7 +152,7 @@ The HTML report includes short explanations such as:
 - `category phrase match`
 - `fuzzy bonus=3.1`
 
-These are generated so the ranking feels inspectable instead of opaque.
+Those explanations are useful for debugging and tuning, even though the current HTML report no longer displays them.
 
 ## Current trade-offs
 
@@ -167,8 +167,7 @@ This scorer is intentionally simple and reviewer-friendly, but it has limitation
 
 Strong next improvements would be:
 
-- parse attached PDFs and include extracted text in scoring
 - add better handling for class/item code semantics
-- tune weights with more examples
+- tune weights with more live examples
 - separate broad construction signals from highly specific trade signals
 - add a small normalization step so extremely long descriptions do not accumulate too many keyword hits

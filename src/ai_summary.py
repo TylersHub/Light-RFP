@@ -644,6 +644,7 @@ class GeminiSummarizer:
         self._last_request_at = 0.0
         self.cache_path = Path(AI_SUMMARY_CACHE_PATH)
         self.cache = self._load_cache()
+        self._cache_dirty = False
 
     @property
     def enabled(self) -> bool:
@@ -682,7 +683,7 @@ class GeminiSummarizer:
             "summary": normalize_whitespace(summary),
             "model": self.model,
         }
-        self._save_cache()
+        self._cache_dirty = True
 
     def _wait_for_rate_limit_window(self) -> None:
         if not self._last_request_at:
@@ -719,8 +720,9 @@ class GeminiSummarizer:
                                 "text": (
                                     "You are a procurement analyst helping a vendor marketplace understand public RFPs. "
                                     "Write specific, complete, evidence-based summaries of the requested work. "
-                                    "Return only the final 2-sentence summary text. "
-                                    "Do not return fragments, bullets, headings, markdown, or JSON."
+                                    "Return only delimiter-formatted result lines in the format "
+                                    "SOLICITATION_ID|||summary. Do not return fragments, bullets, headings, "
+                                    "markdown, JSON, or any explanatory text."
                                 )
                             }
                         ]
@@ -740,7 +742,7 @@ class GeminiSummarizer:
                         }
                     ],
                     "generationConfig": {
-                        "maxOutputTokens": 260,
+                        "maxOutputTokens": min(4096, max(768, 220 * len(records))),
                         "temperature": 0.0,
                     },
                 },
@@ -803,6 +805,9 @@ class GeminiSummarizer:
         record.ai_summary_error = ""
         record.ai_summary_source = "gemini"
         self._store_cached_summary(record, summary)
+        if self._cache_dirty:
+            self._save_cache()
+            self._cache_dirty = False
         return record
 
     def summarize_solicitations(self, records: list[Solicitation]) -> list[Solicitation]:
@@ -880,5 +885,9 @@ class GeminiSummarizer:
                         f"AI summary request failed: {exc}; fallback summary used"
                     )
                     record.ai_summary_source = "fallback"
+
+        if self._cache_dirty:
+            self._save_cache()
+            self._cache_dirty = False
 
         return updated_records

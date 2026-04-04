@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import json
 import re
 from pathlib import Path
+import time
 from urllib.parse import urlparse
 
 import requests
 from pypdf import PdfReader
 
+from .config import PDF_CACHE_TTL_SECONDS
 from .models import Attachment, Solicitation
 from .parse_esbd import first_sentences, normalize_whitespace
 
@@ -42,6 +45,61 @@ def build_pdf_preview(text: str, max_words: int = 45) -> str:
     if len(words) <= max_words:
         return preview
     return " ".join(words[:max_words]).rstrip(",;:") + "..."
+
+
+def pdf_cache_path(file_path: Path) -> Path:
+    return file_path.with_suffix(f"{file_path.suffix}.json")
+
+
+def load_cached_pdf_extraction(file_path: Path) -> tuple[str, str, bool, int] | None:
+    cache_path = pdf_cache_path(file_path)
+    if not cache_path.exists():
+        return None
+
+    try:
+        file_stat = file_path.stat()
+        cache_age_seconds = time.time() - cache_path.stat().st_mtime
+        if cache_age_seconds > PDF_CACHE_TTL_SECONDS:
+            return None
+        payload = json.loads(cache_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+    if not isinstance(payload, dict):
+        return None
+    if payload.get("size") != file_stat.st_size:
+        return None
+
+    return (
+        normalize_whitespace(str(payload.get("text", ""))),
+        normalize_whitespace(str(payload.get("status", ""))),
+        bool(payload.get("is_scanned", False)),
+        int(payload.get("page_count", 0) or 0),
+    )
+
+
+def save_cached_pdf_extraction(
+    file_path: Path,
+    text: str,
+    status: str,
+    is_scanned: bool,
+    page_count: int,
+) -> None:
+    cache_path = pdf_cache_path(file_path)
+    try:
+        cache_payload = {
+            "size": file_path.stat().st_size,
+            "status": status,
+            "is_scanned": is_scanned,
+            "page_count": page_count,
+            "text": text,
+        }
+        cache_path.write_text(
+            json.dumps(cache_payload, ensure_ascii=True),
+            encoding="utf-8",
+        )
+    except OSError:
+        return
 
 
 def download_attachment(
@@ -120,7 +178,18 @@ def extract_attachment_pdf(
             timeout_seconds=timeout_seconds,
         )
         updated.local_path = str(target_path)
-        pdf_text, status, is_scanned, page_count = extract_pdf_text(target_path)
+        cached_extraction = load_cached_pdf_extraction(target_path)
+        if cached_extraction is not None:
+            pdf_text, status, is_scanned, page_count = cached_extraction
+        else:
+            pdf_text, status, is_scanned, page_count = extract_pdf_text(target_path)
+            save_cached_pdf_extraction(
+                file_path=target_path,
+                text=pdf_text,
+                status=status,
+                is_scanned=is_scanned,
+                page_count=page_count,
+            )
         updated.pdf_extraction_status = status
         updated.pdf_is_scanned = is_scanned
         updated.pdf_page_count = page_count
