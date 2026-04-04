@@ -62,13 +62,19 @@ The theoretical range is open-ended:
 - the minimum can go below `0` if negative keyword penalties outweigh positive evidence
 - the maximum is unbounded because a solicitation can accumulate many keyword hits
 
-In practice, with the current ESBD data and current weights, stronger matches have tended to land roughly in the `20` to `55` range during verification, while weaker matches score lower.
+In practice, with the current ESBD data and current weights, the final top-20 report results have recently landed roughly in the `41` to `74` range during live verification, while weaker matches score lower.
 
 So the most useful interpretation is:
 
 - higher score = stronger estimated relevance
 - lower score = weaker estimated relevance
 - the number itself is less important than the ordering of results
+
+That observed range is not a guarantee. It can move as:
+
+- the live ESBD solicitation mix changes
+- PDF text adds more matching evidence
+- category weights or keyword maps are tuned
 
 This is done independently for every category in the category map.
 
@@ -161,6 +167,7 @@ This scorer is intentionally simple and reviewer-friendly, but it has limitation
 - It is keyword-driven, so it can miss relevant bids that use unusual wording.
 - It can still over-score generic construction solicitations if they overlap multiple broad categories.
 - PDF extraction only runs on a smaller high-confidence subset, so not every open solicitation benefits from attachment-body text.
+- The final report results do go through a final PDF refresh before rendering, so the locked top 20 uses the strongest PDF-backed evidence available for those results.
 - Negative filtering is lightweight and may need tuning as more live solicitations are observed.
 
 ## Future improvements

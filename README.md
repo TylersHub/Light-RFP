@@ -60,11 +60,11 @@ python -m pip install -r requirements.txt
 
 The scraper will automatically load environment variables from a local `.env` file if one exists.
 
-An example file is included at:
+To use AI summaries, create a `.env` file in the project root and copy the format from:
 
 `.env.example`
 
-For AI summaries, set:
+Then add your Gemini settings:
 
 ```env
 GEMINI_API_KEY=your_api_key_here
@@ -95,7 +95,15 @@ python scraper.py --enable-ai-summaries --ai-context-chars-per-record 5000
 
 ### 7. Optional: enable AI summaries
 
-PDF extraction runs automatically, but AI summaries are optional because they require a Gemini API key.
+PDF extraction runs automatically. AI summaries are optional and only run when `--enable-ai-summaries` is used and a Gemini API key is available.
+
+If you created a `.env` file in Step 5, you can usually just run:
+
+```powershell
+python scraper.py --enable-ai-summaries
+```
+
+You can also set the API key directly in the terminal for one session:
 
 In PowerShell:
 
@@ -125,7 +133,7 @@ After the script finishes, open:
 
 `output/esbd_results.html`
 
-The scraper prints stage timings while it runs so you can see where time is being spent. The first run on a clean machine is slower because it builds local caches under `data/processed/` and `data/pdfs/`. Repeat runs are usually much faster.
+The scraper prints stage timings while it runs so you can see where time is being spent. The first run on a clean machine, or the first run after cache expiry, is slower because it rebuilds local caches under `data/processed/` and `data/pdfs/`. Repeat runs are usually much faster.
 
 ## Quick Start
 
@@ -141,7 +149,7 @@ python scraper.py
 
 I began with the public ESBD page specified in the assignment: `https://www.txsmartbuy.gov/esbd`. After inspecting the site behavior, I found that the search UI is backed by a paginated JSON listing service and a structured details service, so the scraper uses those live ESBD services instead of relying on only the visible HTML results.
 
-The scraper requests every page of currently open ESBD solicitations from the live listing service, scores the full live open-solicitation set, looks up a generous shortlist of the strongest candidates through the ESBD details service, and then downloads PDF attachments for a smaller top-tier subset before producing the final top 20. Listing-page collection now runs in parallel so the full open set can still be analyzed without waiting on a long serial page walk. The score uses weighted keyword and fuzzy matching across title, classification, description, attachment names, and extracted PDF text, then applies penalties to clearly unrelated software-only, medical, legal, or insurance-oriented bids.
+The scraper requests every page of currently open ESBD solicitations from the live listing service, scores the full live open-solicitation set, looks up a generous shortlist of the strongest candidates through the ESBD details service, and then downloads PDF attachments for a smaller top-tier subset before producing the final top 20. It also performs one final PDF refresh for the final report results so the ranked output stays consistent whether AI summaries are enabled or not. Listing-page collection runs in parallel so the full open set can still be analyzed without waiting on a long serial page walk. The score uses weighted keyword and fuzzy matching across title, classification, description, attachment names, and extracted PDF text, then applies penalties to clearly unrelated software-only, medical, legal, or insurance-oriented bids.
 
 When `--enable-ai-summaries` is used and `GEMINI_API_KEY` is set, the scraper sends extracted PDF text only for the final report results to the Gemini API to generate concise two-sentence summaries. To keep the runtime reasonable and avoid quota spikes, the scraper batches multiple final-report solicitations into each Gemini request and rate-limits those batch requests. Detail payloads and PDF extraction results are also cached locally under `data/processed/` and `data/pdfs/` so repeat runs do not keep redoing the same work. This AI step is optional so the project remains runnable end-to-end without requiring paid API access.
 

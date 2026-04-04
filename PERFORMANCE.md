@@ -53,7 +53,7 @@ This only helps when the same PDF-backed report result appears again with unchan
 
 - The ESBD listing pages are fetched live on every run.
 - The likely finalists go through a live detail refresh before the final top 20 is locked.
-- When AI summaries are enabled, the final report results go through a final PDF download/extraction pass before summarization.
+- The final report results go through a final PDF download/extraction pass before rendering, whether AI summaries are enabled or not.
 
 So the performance improvements are not coming from freezing the whole scrape. The scraper still checks the live site each run where freshness matters most.
 
@@ -65,6 +65,7 @@ The main performance improvements are:
 2. One detail fetch per solicitation instead of repeated fetch loops.
 3. Reuse of recent detail payloads and PDF extraction results when they are still fresh.
 4. Gemini batching that only runs for the final report results, not for earlier candidates.
+5. A consistent final-report PDF refresh so AI and non-AI runs use the same ranking inputs.
 
 ## Why this is still safe
 
@@ -80,37 +81,43 @@ The main performance improvements are:
 Measured live on April 3, 2026 with the current code:
 
 - `python scraper.py`
-  - total runtime: about `23.5s`
-- `python scraper.py --enable-ai-summaries --output output\esbd_results.html`
-  - total runtime: about `57.4s`
+  - total runtime on a warm-cache run: about `24.5s`
+- `python scraper.py --enable-ai-summaries --output output\compare_ai.html`
+  - total runtime on a warm-cache run: about `57.6s`
 
-Representative no-AI stage timings from the current code:
+Representative warm-cache no-AI stage timings from the current code:
 
-- listing collection: `9.7s`
-- initial scoring: `0.9s`
-- detail lookup for 160 candidates: `0.2s`
-- post-detail rescoring: `0.4s`
-- PDF extraction for 40 candidates: `0.7s`
-- final scoring: `5.7s`
-- live detail refresh for 40 finalists: `5.9s`
-
-Representative AI-enabled stage timings from the current code:
-
-- listing collection: `9.3s`
+- listing collection: `8.7s`
 - initial scoring: `0.8s`
-- detail lookup for 160 candidates: `0.2s`
+- detail lookup for 160 top-ranked listing candidates: `0.2s`
 - post-detail rescoring: `0.4s`
-- PDF extraction for 40 candidates: `0.7s`
-- final scoring: `5.5s`
-- live detail refresh for 40 finalists: `5.8s`
-- final-report PDF refresh for 20 results: `3.4s`
-- AI summarization for 20 report results: `31.3s`
+- PDF extraction for 40 highest-ranked detail-reviewed candidates: `0.3s`
+- final scoring: `5.1s`
+- live detail refresh for 40 likely final-report candidates: `5.9s`
+- final-report PDF refresh for 20 final report results: `3.0s`
+
+Representative warm-cache AI-enabled stage timings from the current code:
+
+- listing collection: `9.1s`
+- initial scoring: `0.9s`
+- detail lookup for 160 top-ranked listing candidates: `0.2s`
+- post-detail rescoring: `0.5s`
+- PDF extraction for 40 highest-ranked detail-reviewed candidates: `0.4s`
+- final scoring: `5.6s`
+- live detail refresh for 40 likely final-report candidates: `6.3s`
+- final-report PDF refresh for 20 final report results: `3.3s`
+- AI summarization for 20 report results: `31.4s`
+
+Representative cache-rebuild run behavior:
+
+- if the short-lived detail or PDF caches have expired, detail lookup and PDF extraction can spike sharply for a single run
+- for example, one live run took about `109s` total, with detail lookup at `14.5s` and PDF extraction at `70.5s`, before the next run dropped back to the normal warm-cache range
 
 Exact runtimes will vary based on:
 
 - network conditions
 - the number of currently open ESBD solicitations
-- whether the detail and PDF caches are already warm
+- whether the detail and PDF caches are already warm or have just expired
 - Gemini response time and rate limiting
 
 ## Trade-offs
