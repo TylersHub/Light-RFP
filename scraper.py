@@ -178,18 +178,16 @@ def main() -> int:
         f"in {time.perf_counter() - started_at:.1f}s"
     )
     top_results = final_ranked[: args.top_n]
-
-    if args.enable_ai_summaries:
-        started_at = time.perf_counter()
-        top_results = scraper.download_and_extract_pdfs_for_records(
-            top_results,
-            use_cache=True,
-        )
-        top_results = rank_solicitations(top_results)[: args.top_n]
-        print(
-            f"Final-report PDF refresh finished for {len(top_results)} final report results "
-            f"in {time.perf_counter() - started_at:.1f}s"
-        )
+    started_at = time.perf_counter()
+    top_results = scraper.download_and_extract_pdfs_for_records(
+        top_results,
+        use_cache=True,
+    )
+    top_results = rank_solicitations(top_results)[: args.top_n]
+    print(
+        f"Final-report PDF refresh finished for {len(top_results)} final report results "
+        f"in {time.perf_counter() - started_at:.1f}s"
+    )
 
     if args.enable_ai_summaries:
         summarizer = GeminiSummarizer(
