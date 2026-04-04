@@ -8,6 +8,46 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from .models import Solicitation
 
 
+def _parse_datetimeish(value: str) -> datetime | None:
+    if not value:
+        return None
+
+    normalized = value.strip()
+    for candidate in (
+        normalized,
+        normalized.replace("Z", "+00:00"),
+    ):
+        try:
+            return datetime.fromisoformat(candidate)
+        except ValueError:
+            continue
+    for pattern in (
+        "%m/%d/%Y",
+        "%m/%d/%Y %I:%M %p",
+        "%B %d, %Y",
+        "%b %d, %Y",
+    ):
+        try:
+            return datetime.strptime(normalized, pattern)
+        except ValueError:
+            continue
+    return None
+
+
+def format_display_date(value: str) -> str:
+    parsed = _parse_datetimeish(value)
+    if parsed:
+        return parsed.strftime("%b %d, %Y")
+    return value
+
+
+def format_display_datetime(value: str) -> str:
+    parsed = _parse_datetimeish(value)
+    if parsed:
+        return parsed.strftime("%b %d, %Y %I:%M %p").replace(" 0", " ")
+    return value
+
+
 def render_report(
     results: list[Solicitation],
     output_path: Path,
@@ -20,6 +60,8 @@ def render_report(
         loader=FileSystemLoader(str(templates_dir)),
         autoescape=select_autoescape(["html", "xml"]),
     )
+    env.filters["display_date"] = format_display_date
+    env.filters["display_datetime"] = format_display_datetime
     template = env.get_template("report.html.j2")
 
     html = template.render(

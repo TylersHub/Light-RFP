@@ -28,8 +28,8 @@
         .card-title a { color:var(--ink); text-decoration:none; }
         .card-title a:hover { color:var(--accent); }
         .card-subtitle { margin-top:10px; color:var(--muted); font-size:0.98rem; line-height:1.5; }
-        .badges { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; }
-        .badge { padding:7px 11px; border-radius:999px; font-size:0.86rem; font-weight:bold; background:var(--accent-soft); color:var(--accent); }
+        .badges { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; align-items:flex-start; }
+        .badge { display:inline-flex; align-items:center; padding:7px 11px; border-radius:999px; font-size:0.86rem; font-weight:bold; background:var(--accent-soft); color:var(--accent); line-height:1; white-space:nowrap; }
         .badge.score { background:#e5f2e7; color:var(--good); }
         .card-body { display:grid; gap:18px; }
         .info-grid { display:grid; grid-template-columns:1.1fr 0.9fr; gap:18px; }
@@ -38,19 +38,22 @@
         .detail-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px 18px; margin-top:14px; }
         .detail-item strong { display:block; font-size:0.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
         .detail-item span, .detail-item div { line-height:1.5; overflow-wrap:anywhere; word-break:break-word; }
+        .detail-item a { color:var(--ink); text-decoration:none; }
+        .detail-item a:hover { text-decoration:underline; }
         .classification { overflow-wrap:anywhere; word-break:break-word; }
         a { overflow-wrap:anywhere; word-break:break-word; }
         .section-title { margin-bottom:12px; }
         .description { font-size:1rem; line-height:1.7; margin:0; }
         .classification { font-size:0.97rem; line-height:1.65; color:var(--ink); margin:0; }
         .links { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
-        .link-chip { display:inline-flex; align-items:center; padding:9px 12px; border-radius:999px; border:1px solid #c9dfe1; background:#edf5f6; color:var(--accent); text-decoration:none; font-weight:bold; font-size:0.9rem; }
-        .link-chip:hover { background:#e6f1f2; }
+        .link-chip { display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:10px 16px; border-radius:12px; border:1px solid #0d5961; background:linear-gradient(180deg, #147782 0%, #0f6a73 100%); color:#fff; text-decoration:none; font-weight:bold; font-size:0.92rem; box-shadow:0 6px 14px rgba(15, 106, 115, 0.18); transition:transform 120ms ease, box-shadow 120ms ease, background 120ms ease; }
+        .link-chip:hover { background:linear-gradient(180deg, #18848f 0%, #126f79 100%); box-shadow:0 8px 18px rgba(15, 106, 115, 0.22); transform:translateY(-1px); }
         .list { margin:10px 0 0; padding-left:18px; }
         .list li { margin-bottom:8px; line-height:1.55; }
         .section { padding:24px; margin-top:28px; }
         .section p, .section li { color:var(--muted); line-height:1.6; }
         .attachments a { color:var(--accent); }
+        .score-value { font-variant-numeric:tabular-nums; }
         @media (max-width:880px) { .info-grid { grid-template-columns:1fr; } }
         @media (max-width:700px) { .card-head { flex-direction:column; } .badges { justify-content:flex-start; } .card { padding:20px; } }
     </style>
@@ -61,7 +64,7 @@
             <h1>LightRFP ESBD Opportunity Report</h1>
             <p class="subtitle">
                 Ranked government solicitation matches from the Texas Electronic State Business Daily.
-                Generated at 2026-04-03 22:14:54 from live data at <a href="https://www.txsmartbuy.gov/esbd">https://www.txsmartbuy.gov/esbd</a>.
+                Generated at Apr 3, 2026 10:29 PM from live data at <a href="https://www.txsmartbuy.gov/esbd">https://www.txsmartbuy.gov/esbd</a>.
             </p>
             <div class="stats">
                 <div class="stat"><span class="stat-label">Source</span><span class="stat-value">ESBD</span></div>
@@ -81,7 +84,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 74.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;74.00</span></span>
                         
                         <span class="badge">Concrete</span>
                         
@@ -110,11 +113,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-03-20T00:00:00</span>
+                                    <span>Mar 20, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/21/2026</span>
+                                    <span>Apr 21, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -134,11 +137,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>michelle.birch@sanantonio.gov</span>
+                                    
+                                    <span><a href="mailto:michelle.birch@sanantonio.gov">michelle.birch@sanantonio.gov</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(210) 207-8642</span>
+                                    
+                                    <span><a href="tel:2102078642">(210) 207-8642</a></span>
                                 </div>
                             </div>
                         </section>
@@ -185,7 +190,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 72.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;72.00</span></span>
                         
                         <span class="badge">Roofing</span>
                         
@@ -214,11 +219,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-04-03T00:00:00</span>
+                                    <span>Apr 03, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/30/2026</span>
+                                    <span>Apr 30, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -238,11 +243,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>Nohemi.Sanchez@uta.edu</span>
+                                    
+                                    <span><a href="mailto:Nohemi.Sanchez@uta.edu">Nohemi.Sanchez@uta.edu</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(817) 272-4995</span>
+                                    
+                                    <span><a href="tel:8172724995">(817) 272-4995</a></span>
                                 </div>
                             </div>
                         </section>
@@ -289,7 +296,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 70.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;70.00</span></span>
                         
                         <span class="badge">Concrete</span>
                         
@@ -318,11 +325,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-03-20T00:00:00</span>
+                                    <span>Mar 20, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/28/2026</span>
+                                    <span>Apr 28, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -342,11 +349,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>michelle.birch@sanantonio.gov</span>
+                                    
+                                    <span><a href="mailto:michelle.birch@sanantonio.gov">michelle.birch@sanantonio.gov</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(210) 207-8642</span>
+                                    
+                                    <span><a href="tel:2102078642">(210) 207-8642</a></span>
                                 </div>
                             </div>
                         </section>
@@ -393,7 +402,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 68.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;68.00</span></span>
                         
                         <span class="badge">Roofing</span>
                         
@@ -422,11 +431,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-03-31T00:00:00</span>
+                                    <span>Mar 31, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>5/6/2026</span>
+                                    <span>May 06, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -446,11 +455,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>mistey.reeves@jeffersoncountytx.gov</span>
+                                    
+                                    <span><a href="mailto:mistey.reeves@jeffersoncountytx.gov">mistey.reeves@jeffersoncountytx.gov</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(409) 835-8693</span>
+                                    
+                                    <span><a href="tel:4098358693">(409) 835-8693</a></span>
                                 </div>
                             </div>
                         </section>
@@ -497,7 +508,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 68.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;68.00</span></span>
                         
                         <span class="badge">Electrical</span>
                         
@@ -526,11 +537,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-02-13T00:00:00</span>
+                                    <span>Feb 13, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/22/2026</span>
+                                    <span>Apr 22, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -550,11 +561,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>melaniew@wacotx.gov</span>
+                                    
+                                    <span><a href="mailto:melaniew@wacotx.gov">melaniew@wacotx.gov</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(254) 750-8098</span>
+                                    
+                                    <span><a href="tel:2547508098">(254) 750-8098</a></span>
                                 </div>
                             </div>
                         </section>
@@ -647,7 +660,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 65.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;65.00</span></span>
                         
                         <span class="badge">Asphalt</span>
                         
@@ -676,11 +689,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-03-25T00:00:00</span>
+                                    <span>Mar 25, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/14/2026</span>
+                                    <span>Apr 14, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -700,11 +713,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>lgonzalez@huntsvilletx.gov</span>
+                                    
+                                    <span><a href="mailto:lgonzalez@huntsvilletx.gov">lgonzalez@huntsvilletx.gov</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(936) 291-5495</span>
+                                    
+                                    <span><a href="tel:9362915495">(936) 291-5495</a></span>
                                 </div>
                             </div>
                         </section>
@@ -759,7 +774,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 59.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;59.00</span></span>
                         
                         <span class="badge">Hazard Abatement</span>
                         
@@ -788,11 +803,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-03-18T00:00:00</span>
+                                    <span>Mar 18, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>5/1/2026</span>
+                                    <span>May 01, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -812,11 +827,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>gabriel.hernandez2@sanantonio.gov</span>
+                                    
+                                    <span><a href="mailto:gabriel.hernandez2@sanantonio.gov">gabriel.hernandez2@sanantonio.gov</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(210) 207-5884</span>
+                                    
+                                    <span><a href="tel:2102075884">(210) 207-5884</a></span>
                                 </div>
                             </div>
                         </section>
@@ -871,7 +888,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 58.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;58.00</span></span>
                         
                         <span class="badge">Lawn and Landscaping</span>
                         
@@ -900,11 +917,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-03-28T00:00:00</span>
+                                    <span>Mar 28, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/14/2026</span>
+                                    <span>Apr 14, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -924,11 +941,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>sylvia.deleon@hcisd.org</span>
+                                    
+                                    <span><a href="mailto:sylvia.deleon@hcisd.org">sylvia.deleon@hcisd.org</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(956) 430-9740</span>
+                                    
+                                    <span><a href="tel:9564309740">(956) 430-9740</a></span>
                                 </div>
                             </div>
                         </section>
@@ -968,7 +987,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 58.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;58.00</span></span>
                         
                         <span class="badge">Architecture and Design</span>
                         
@@ -997,11 +1016,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-03-17T00:00:00</span>
+                                    <span>Mar 17, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/17/2026</span>
+                                    <span>Apr 17, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -1021,11 +1040,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>michelle.mckinney@wilcotx.gov</span>
+                                    
+                                    <span><a href="mailto:michelle.mckinney@wilcotx.gov">michelle.mckinney@wilcotx.gov</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(512) 943-3878</span>
+                                    
+                                    <span><a href="tel:5129433878">(512) 943-3878</a></span>
                                 </div>
                             </div>
                         </section>
@@ -1065,7 +1086,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 57.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;57.00</span></span>
                         
                         <span class="badge">Paint</span>
                         
@@ -1094,11 +1115,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-03-11T00:00:00</span>
+                                    <span>Mar 11, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/10/2026</span>
+                                    <span>Apr 10, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -1118,11 +1139,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>Clifton.Brayshaw@sulross.edu</span>
+                                    
+                                    <span><a href="mailto:Clifton.Brayshaw@sulross.edu">Clifton.Brayshaw@sulross.edu</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(936) 294-1906</span>
+                                    
+                                    <span><a href="tel:9362941906">(936) 294-1906</a></span>
                                 </div>
                             </div>
                         </section>
@@ -1162,7 +1185,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 53.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;53.00</span></span>
                         
                         <span class="badge">General Contractors</span>
                         
@@ -1191,11 +1214,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-03-12T00:00:00</span>
+                                    <span>Mar 12, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/7/2026</span>
+                                    <span>Apr 07, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -1215,11 +1238,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>lgonzalez@huntsvilletx.gov</span>
+                                    
+                                    <span><a href="mailto:lgonzalez@huntsvilletx.gov">lgonzalez@huntsvilletx.gov</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(936) 291-5495</span>
+                                    
+                                    <span><a href="tel:9362915495">(936) 291-5495</a></span>
                                 </div>
                             </div>
                         </section>
@@ -1274,7 +1299,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 52.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;52.00</span></span>
                         
                         <span class="badge">Waste Management</span>
                         
@@ -1303,11 +1328,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-03-12T00:00:00</span>
+                                    <span>Mar 12, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/7/2026</span>
+                                    <span>Apr 07, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -1327,11 +1352,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>lgonzalez@huntsvilletx.gov</span>
+                                    
+                                    <span><a href="mailto:lgonzalez@huntsvilletx.gov">lgonzalez@huntsvilletx.gov</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(936) 291-5495</span>
+                                    
+                                    <span><a href="tel:9362915495">(936) 291-5495</a></span>
                                 </div>
                             </div>
                         </section>
@@ -1386,7 +1413,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 52.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;52.00</span></span>
                         
                         <span class="badge">Concrete</span>
                         
@@ -1415,11 +1442,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-03-11T00:00:00</span>
+                                    <span>Mar 11, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/10/2026</span>
+                                    <span>Apr 10, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -1439,11 +1466,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>Clifton.Brayshaw@sulross.edu</span>
+                                    
+                                    <span><a href="mailto:Clifton.Brayshaw@sulross.edu">Clifton.Brayshaw@sulross.edu</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(936) 294-1906</span>
+                                    
+                                    <span><a href="tel:9362941906">(936) 294-1906</a></span>
                                 </div>
                             </div>
                         </section>
@@ -1483,7 +1512,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 51.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;51.00</span></span>
                         
                         <span class="badge">General Contractors</span>
                         
@@ -1512,11 +1541,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-03-18T00:00:00</span>
+                                    <span>Mar 18, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/14/2026</span>
+                                    <span>Apr 14, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -1536,11 +1565,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>Demi.Beckham@uttyler.edu</span>
+                                    
+                                    <span><a href="mailto:Demi.Beckham@uttyler.edu">Demi.Beckham@uttyler.edu</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(903) 565-6407</span>
+                                    
+                                    <span><a href="tel:9035656407">(903) 565-6407</a></span>
                                 </div>
                             </div>
                         </section>
@@ -1580,7 +1611,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 50.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;50.00</span></span>
                         
                         <span class="badge">Electrical</span>
                         
@@ -1609,11 +1640,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-03-28T00:00:00</span>
+                                    <span>Mar 28, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/14/2026</span>
+                                    <span>Apr 14, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -1633,11 +1664,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>sylvia.deleon@hcisd.org</span>
+                                    
+                                    <span><a href="mailto:sylvia.deleon@hcisd.org">sylvia.deleon@hcisd.org</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(956) 430-9740</span>
+                                    
+                                    <span><a href="tel:9564309740">(956) 430-9740</a></span>
                                 </div>
                             </div>
                         </section>
@@ -1677,7 +1710,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 50.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;50.00</span></span>
                         
                         <span class="badge">Roofing</span>
                         
@@ -1706,11 +1739,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-03-19T00:00:00</span>
+                                    <span>Mar 19, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/13/2026</span>
+                                    <span>Apr 13, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -1730,11 +1763,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>genevieve.scholes@sjcd.edu</span>
+                                    
+                                    <span><a href="mailto:genevieve.scholes@sjcd.edu">genevieve.scholes@sjcd.edu</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(281) 998-6349</span>
+                                    
+                                    <span><a href="tel:2819986349">(281) 998-6349</a></span>
                                 </div>
                             </div>
                         </section>
@@ -1781,7 +1816,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 47.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;47.00</span></span>
                         
                         <span class="badge">Roofing</span>
                         
@@ -1810,11 +1845,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-04-02T00:00:00</span>
+                                    <span>Apr 02, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/30/2026</span>
+                                    <span>Apr 30, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -1834,11 +1869,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>toribio.solis@dps.texas.gov</span>
+                                    
+                                    <span><a href="mailto:toribio.solis@dps.texas.gov">toribio.solis@dps.texas.gov</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(512) 424-2968</span>
+                                    
+                                    <span><a href="tel:5124242968">(512) 424-2968</a></span>
                                 </div>
                             </div>
                         </section>
@@ -1973,7 +2010,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 46.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;46.00</span></span>
                         
                         <span class="badge">Plumbing</span>
                         
@@ -2002,11 +2039,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-03-27T00:00:00</span>
+                                    <span>Mar 27, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/13/2026</span>
+                                    <span>Apr 13, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -2026,11 +2063,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>Gilbert.Munoz@hhs.texas.gov</span>
+                                    
+                                    <span><a href="mailto:Gilbert.Munoz@hhs.texas.gov">Gilbert.Munoz@hhs.texas.gov</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(512) 406-2473</span>
+                                    
+                                    <span><a href="tel:5124062473">(512) 406-2473</a></span>
                                 </div>
                             </div>
                         </section>
@@ -2127,7 +2166,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 46.00</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;46.00</span></span>
                         
                         <span class="badge">Wall-Making</span>
                         
@@ -2156,11 +2195,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-03-20T00:00:00</span>
+                                    <span>Mar 20, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/9/2026</span>
+                                    <span>Apr 09, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -2180,11 +2219,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>KMorgan@mylubbock.us</span>
+                                    
+                                    <span><a href="mailto:KMorgan@mylubbock.us">KMorgan@mylubbock.us</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(806) 775-2167</span>
+                                    
+                                    <span><a href="tel:8067752167">(806) 775-2167</a></span>
                                 </div>
                             </div>
                         </section>
@@ -2231,7 +2272,7 @@
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score 41.43</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;41.43</span></span>
                         
                         <span class="badge">Electrical</span>
                         
@@ -2260,11 +2301,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>2026-03-18T00:00:00</span>
+                                    <span>Mar 18, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>4/9/2026</span>
+                                    <span>Apr 09, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -2284,11 +2325,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>kelli.morris@lamar.edu</span>
+                                    
+                                    <span><a href="mailto:kelli.morris@lamar.edu">kelli.morris@lamar.edu</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>(409) 880-8377</span>
+                                    
+                                    <span><a href="tel:4098808377">(409) 880-8377</a></span>
                                 </div>
                             </div>
                         </section>
