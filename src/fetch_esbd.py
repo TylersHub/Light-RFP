@@ -359,7 +359,3 @@ class ESBDScraper:
                     records_with_pdfs[index] = records[index]
 
         return [record for record in records_with_pdfs if record]
-
-    def collect_solicitations(self, max_candidates: int | None = None) -> list[Solicitation]:
-        listings = self.collect_listing_solicitations(max_candidates=max_candidates)
-        return self.fetch_details_for_records(listings)

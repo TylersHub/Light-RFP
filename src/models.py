@@ -14,7 +14,6 @@ class Attachment:
     pdf_is_scanned: bool = False
     pdf_page_count: int = 0
     pdf_text_length: int = 0
-    pdf_text_preview: str = ""
     pdf_text: str = ""
 
 
@@ -41,7 +40,6 @@ class Solicitation:
     addendum_text: str = ""
     raw_text_blob: str = ""
     pdf_text_blob: str = ""
-    pdf_text_preview: str = ""
     pdf_extraction_summary: str = ""
     ai_summary: str = ""
     ai_summary_model: str = ""

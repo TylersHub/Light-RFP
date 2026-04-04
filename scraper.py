@@ -14,6 +14,7 @@ from src.config import (
     PDF_CANDIDATE_MULTIPLIER,
 )
 from src.fetch_esbd import ESBDScraper
+from src.models import Solicitation
 from src.render_html import render_report
 from src.score_relevance import score_solicitation
 
@@ -74,6 +75,18 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def rank_solicitations(records: list[Solicitation]) -> list[Solicitation]:
+    return sorted(
+        [score_solicitation(record) for record in records],
+        key=lambda item: (
+            item.relevance_score,
+            item.posting_date or "",
+            item.due_datetime or "",
+        ),
+        reverse=True,
+    )
+
+
 def main() -> int:
     load_local_env()
     args = parse_args()
@@ -94,16 +107,7 @@ def main() -> int:
         return 1
 
     started_at = time.perf_counter()
-    pre_scored = [score_solicitation(solicitation) for solicitation in listing_solicitations]
-    pre_ranked = sorted(
-        pre_scored,
-        key=lambda item: (
-            item.relevance_score,
-            item.posting_date or "",
-            item.due_datetime or "",
-        ),
-        reverse=True,
-    )
+    pre_ranked = rank_solicitations(listing_solicitations)
     print(f"Initial scoring finished in {time.perf_counter() - started_at:.1f}s")
     detail_candidate_count = min(
         len(pre_ranked),
@@ -124,15 +128,7 @@ def main() -> int:
         return 1
 
     started_at = time.perf_counter()
-    ranked = sorted(
-        [score_solicitation(solicitation) for solicitation in detailed_candidates],
-        key=lambda item: (
-            item.relevance_score,
-            item.posting_date or "",
-            item.due_datetime or "",
-        ),
-        reverse=True,
-    )
+    ranked = rank_solicitations(detailed_candidates)
     print(f"Post-detail rescoring finished in {time.perf_counter() - started_at:.1f}s")
     pdf_candidate_count = min(
         len(ranked),
@@ -161,15 +157,7 @@ def main() -> int:
     ]
 
     started_at = time.perf_counter()
-    final_ranked = sorted(
-        [score_solicitation(solicitation) for solicitation in merged_candidates],
-        key=lambda item: (
-            item.relevance_score,
-            item.posting_date or "",
-            item.due_datetime or "",
-        ),
-        reverse=True,
-    )
+    final_ranked = rank_solicitations(merged_candidates)
     print(f"Final scoring finished in {time.perf_counter() - started_at:.1f}s")
     live_refresh_count = min(len(final_ranked), max(args.top_n * 2, 40))
     started_at = time.perf_counter()
@@ -184,15 +172,7 @@ def main() -> int:
         refreshed_by_id.get(solicitation.solicitation_id, solicitation)
         for solicitation in final_ranked
     ]
-    final_ranked = sorted(
-        [score_solicitation(solicitation) for solicitation in refreshed_candidates],
-        key=lambda item: (
-            item.relevance_score,
-            item.posting_date or "",
-            item.due_datetime or "",
-        ),
-        reverse=True,
-    )
+    final_ranked = rank_solicitations(refreshed_candidates)
     print(
         f"Live detail refresh finished for {len(refreshed_finalists)} likely final-report candidates "
         f"in {time.perf_counter() - started_at:.1f}s"
@@ -205,15 +185,7 @@ def main() -> int:
             top_results,
             use_cache=True,
         )
-        top_results = sorted(
-            [score_solicitation(solicitation) for solicitation in top_results],
-            key=lambda item: (
-                item.relevance_score,
-                item.posting_date or "",
-                item.due_datetime or "",
-            ),
-            reverse=True,
-        )[: args.top_n]
+        top_results = rank_solicitations(top_results)[: args.top_n]
         print(
             f"Final-report PDF refresh finished for {len(top_results)} final report results "
             f"in {time.perf_counter() - started_at:.1f}s"
@@ -242,7 +214,7 @@ def main() -> int:
     render_report(
         results=top_results,
         output_path=output_path,
-        total_candidates=len(pre_scored),
+        total_candidates=len(pre_ranked),
         top_n=args.top_n,
         source_url=scraper.listing_url,
     )

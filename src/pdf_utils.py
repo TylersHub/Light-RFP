@@ -11,7 +11,7 @@ from pypdf import PdfReader
 
 from .config import PDF_CACHE_TTL_SECONDS
 from .models import Attachment, Solicitation
-from .parse_esbd import first_sentences, normalize_whitespace
+from .parse_esbd import normalize_whitespace
 
 
 def is_pdf_attachment(attachment: Attachment) -> bool:
@@ -35,16 +35,6 @@ def build_attachment_path(
     if not filename.lower().endswith(".pdf"):
         filename = f"{filename}.pdf"
     return solicitation_dir / filename
-
-
-def build_pdf_preview(text: str, max_words: int = 45) -> str:
-    preview = first_sentences(text, limit=2)
-    if not preview:
-        return ""
-    words = preview.split()
-    if len(words) <= max_words:
-        return preview
-    return " ".join(words[:max_words]).rstrip(",;:") + "..."
 
 
 def pdf_cache_path(file_path: Path) -> Path:
@@ -197,7 +187,6 @@ def extract_attachment_pdf(
         updated.pdf_is_scanned = is_scanned
         updated.pdf_page_count = page_count
         updated.pdf_text_length = len(pdf_text)
-        updated.pdf_text_preview = build_pdf_preview(pdf_text)
         updated.pdf_text = pdf_text
         return updated, pdf_text
     except requests.RequestException:
@@ -264,7 +253,6 @@ def download_and_extract_solicitation_pdfs(
 
     record.attachment_urls = updated_attachments
     record.pdf_text_blob = normalize_whitespace(" ".join(extracted_texts))
-    record.pdf_text_preview = build_pdf_preview(record.pdf_text_blob)
     record.pdf_extraction_summary = summarize_pdf_extraction(record)
 
     if record.pdf_text_blob:

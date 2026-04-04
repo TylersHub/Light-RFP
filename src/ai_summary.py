@@ -15,7 +15,6 @@ from .config import (
     AI_SUMMARY_CACHE_PATH,
     AI_SUMMARY_CONTEXT_CHARS_PER_RECORD,
     AI_SUMMARY_MAX_RETRIES,
-    AI_SUMMARY_MAX_INPUT_CHARS,
     AI_SUMMARY_MIN_INTERVAL_SECONDS,
     AI_SUMMARY_TIMEOUT_SECONDS,
     DEFAULT_GEMINI_MODEL,
@@ -488,33 +487,6 @@ def extract_retry_delay_seconds(response: requests.Response, attempt: int) -> fl
     return AI_SUMMARY_MIN_INTERVAL_SECONDS * (attempt + 2)
 
 
-def build_summary_prompt(record: Solicitation, max_chars: int, strict: bool = False) -> str:
-    context = build_document_context(record, max_chars=max_chars)
-    strict_suffix = ""
-    if strict:
-        strict_suffix = (
-            "\n\nImportant: your summary was previously too short. "
-            "Return exactly 2 complete sentences with clear subjects and verbs, about 55 to 95 words total. "
-            "Do not include any lead-in such as 'Here is the summary'. "
-            "Mention the specific work requested, the project or facility context, and the major trades or deliverables."
-        )
-
-    return (
-        "Summarize this government RFP in exactly 2 concise but complete sentences, about 55 to 95 words total. "
-        "Focus on the actual scope of work, major services or trades requested, the project or facility context, "
-        "and notable deliverables. Do not mention that this is based on extracted PDF text. "
-        "Do not include any preamble, bullet points, JSON, markdown, or headings. "
-        "Use the excerpts as evidence gathered from across the full document set, including early, middle, and late sections.\n\n"
-        f"Solicitation title: {record.title}\n"
-        f"Solicitation ID: {record.solicitation_id}\n"
-        f"Agency: {record.agency_name or record.agency_number}\n"
-        f"Classification: {record.category_classification}\n"
-        "Document excerpts sampled across the PDFs:\n"
-        f"{context}"
-        f"{strict_suffix}"
-    )
-
-
 def build_batch_summary_prompt(
     records: list[Solicitation],
     context_map: dict[str, str],
@@ -695,10 +667,6 @@ class GeminiSummarizer:
         if elapsed < self.min_interval_seconds:
             time.sleep(self.min_interval_seconds - elapsed)
 
-    def request_summary(self, record: Solicitation, strict: bool = False) -> str:
-        summaries = self.request_batch_summaries([record], strict=strict)
-        return summaries.get(record.solicitation_id, "")
-
     def request_batch_summaries(
         self,
         records: list[Solicitation],
@@ -770,48 +738,6 @@ class GeminiSummarizer:
         if last_error:
             raise last_error
         raise requests.RequestException("Gemini summary request failed without a response")
-
-    def summarize_solicitation(self, record: Solicitation) -> Solicitation:
-        if not self.enabled:
-            record.ai_summary_error = "GEMINI_API_KEY not provided"
-            return record
-        if not record.pdf_text_blob:
-            record.ai_summary_error = "No extracted PDF text available"
-            return record
-
-        cached_summary = self._get_cached_summary(record)
-        if cached_summary:
-            record.ai_summary = cached_summary
-            record.ai_summary_model = self.model
-            record.ai_summary_error = ""
-            record.ai_summary_source = "cache"
-            return record
-
-        summary = self.request_summary(record, strict=False)
-        if summary_needs_retry(summary):
-            summary = self.request_summary(record, strict=True)
-
-        if not summary:
-            record.ai_summary = build_fallback_summary(record)
-            record.ai_summary_error = "Model returned an empty summary; fallback summary used"
-            record.ai_summary_source = "fallback"
-            return record
-
-        if summary_needs_retry(summary):
-            record.ai_summary = build_fallback_summary(record)
-            record.ai_summary_error = "Model returned an incomplete summary; fallback summary used"
-            record.ai_summary_source = "fallback"
-            return record
-
-        record.ai_summary = summary
-        record.ai_summary_model = self.model
-        record.ai_summary_error = ""
-        record.ai_summary_source = "gemini"
-        self._store_cached_summary(record, summary)
-        if self._cache_dirty:
-            self._save_cache()
-            self._cache_dirty = False
-        return record
 
     def summarize_solicitations(self, records: list[Solicitation]) -> list[Solicitation]:
         updated_records = list(records)

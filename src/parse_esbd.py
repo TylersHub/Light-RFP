@@ -98,45 +98,6 @@ def html_to_text(value: str) -> str:
     return normalize_whitespace(soup.get_text(" ", strip=True))
 
 
-def parse_listing_page(soup: BeautifulSoup, base_url: str) -> list[Solicitation]:
-    rows: list[Solicitation] = []
-    for row in soup.select(".esbd-result-row"):
-        title_link = row.select_one(".esbd-result-title a")
-        if not title_link:
-            continue
-
-        title = normalize_whitespace(title_link.get_text(" ", strip=True))
-        detail_url = urljoin(base_url, title_link.get("href", ""))
-
-        values: dict[str, str] = {}
-        for paragraph in row.select("p"):
-            strong = paragraph.find("strong")
-            if not strong:
-                continue
-            label = normalize_whitespace(strong.get_text(" ", strip=True)).rstrip(":")
-            paragraph_text = normalize_whitespace(paragraph.get_text(" ", strip=True))
-            value = normalize_whitespace(paragraph_text.replace(strong.get_text(" ", strip=True), "", 1))
-            values[label] = value
-
-        due_date = values.get("Due Date", "")
-        due_time = values.get("Due Time", "")
-        rows.append(
-            Solicitation(
-                title=title,
-                solicitation_id=values.get("Solicitation ID", ""),
-                status=values.get("Status", ""),
-                agency_number=values.get("Agency/Texas SmartBuy Member Number", ""),
-                posting_date=safe_parse_date(values.get("Posting Date", "")),
-                due_date=due_date,
-                due_time=due_time,
-                due_datetime=safe_parse_date(f"{due_date} {due_time}".strip()),
-                detail_url=detail_url,
-            )
-        )
-
-    return rows
-
-
 def parse_service_listing_response(
     payload: dict,
     base_url: str,
