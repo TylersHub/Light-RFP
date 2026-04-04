@@ -28,8 +28,12 @@
         .card-title a { color:var(--ink); text-decoration:none; }
         .card-title a:hover { color:var(--accent); }
         .card-subtitle { margin-top:10px; color:var(--muted); font-size:0.98rem; line-height:1.5; }
-        .badges { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; }
-        .badge { padding:7px 11px; border-radius:999px; font-size:0.86rem; font-weight:bold; background:var(--accent-soft); color:var(--accent); }
+        .description-text { color:var(--muted); font-size:0.98rem; line-height:1.6; white-space:pre-line; }
+        .description-text.is-collapsed { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden; }
+        .description-toggle { margin-top:6px; padding:0; border:none; background:none; color:var(--accent); cursor:pointer; font-weight:bold; font-size:0.9rem; font-family:inherit; line-height:1.2; }
+        .description-toggle:hover { text-decoration:underline; }
+        .badges { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; align-items:flex-start; }
+        .badge { display:inline-flex; align-items:center; padding:7px 11px; border-radius:999px; font-size:0.86rem; font-weight:bold; background:var(--accent-soft); color:var(--accent); line-height:1; white-space:nowrap; }
         .badge.score { background:#e5f2e7; color:var(--good); }
         .card-body { display:grid; gap:18px; }
         .info-grid { display:grid; grid-template-columns:1.1fr 0.9fr; gap:18px; }
@@ -37,18 +41,23 @@
         .panel + .panel { margin-top:0; }
         .detail-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:14px 18px; margin-top:14px; }
         .detail-item strong { display:block; font-size:0.78rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
-        .detail-item span, .detail-item div { line-height:1.5; }
+        .detail-item span, .detail-item div { line-height:1.5; overflow-wrap:anywhere; word-break:break-word; }
+        .detail-item a { color:var(--ink); text-decoration:none; }
+        .detail-item a:hover { text-decoration:underline; }
+        .classification { overflow-wrap:anywhere; word-break:break-word; }
+        a { overflow-wrap:anywhere; word-break:break-word; }
         .section-title { margin-bottom:12px; }
         .description { font-size:1rem; line-height:1.7; margin:0; }
         .classification { font-size:0.97rem; line-height:1.65; color:var(--ink); margin:0; }
         .links { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; }
-        .link-chip { display:inline-flex; align-items:center; padding:9px 12px; border-radius:999px; border:1px solid #c9dfe1; background:#edf5f6; color:var(--accent); text-decoration:none; font-weight:bold; font-size:0.9rem; }
-        .link-chip:hover { background:#e6f1f2; }
+        .link-chip { display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:10px 16px; border-radius:12px; border:1px solid #0d5961; background:linear-gradient(180deg, #147782 0%, #0f6a73 100%); color:#fff; text-decoration:none; font-weight:bold; font-size:0.92rem; box-shadow:0 6px 14px rgba(15, 106, 115, 0.18); transition:transform 120ms ease, box-shadow 120ms ease, background 120ms ease; }
+        .link-chip:hover { background:linear-gradient(180deg, #18848f 0%, #126f79 100%); box-shadow:0 8px 18px rgba(15, 106, 115, 0.22); transform:translateY(-1px); }
         .list { margin:10px 0 0; padding-left:18px; }
         .list li { margin-bottom:8px; line-height:1.55; }
         .section { padding:24px; margin-top:28px; }
         .section p, .section li { color:var(--muted); line-height:1.6; }
         .attachments a { color:var(--accent); }
+        .score-value { font-variant-numeric:tabular-nums; }
         @media (max-width:880px) { .info-grid { grid-template-columns:1fr; } }
         @media (max-width:700px) { .card-head { flex-direction:column; } .badges { justify-content:flex-start; } .card { padding:20px; } }
     </style>
@@ -59,7 +68,7 @@
             <h1>LightRFP ESBD Opportunity Report</h1>
             <p class="subtitle">
                 Ranked government solicitation matches from the Texas Electronic State Business Daily.
-                Generated at {{ generated_at }} from live data at <a href="{{ source_url }}">{{ source_url }}</a>.
+                Generated at {{ generated_at|display_datetime }} from live data at <a href="{{ source_url }}">{{ source_url }}</a>.
             </p>
             <div class="stats">
                 <div class="stat"><span class="stat-label">Source</span><span class="stat-value">ESBD</span></div>
@@ -74,12 +83,23 @@
                     <div class="title-row">
                         <div class="rank-badge">#{{ loop.index }}</div>
                         <div class="card-title">
+                            {% set full_description = item.description or item.brief_description or "No description available." %}
                             <h2><a href="{{ item.detail_url }}">{{ item.title }}</a></h2>
-                            <p class="card-subtitle">{{ item.brief_description or item.description or "No description available." }}</p>
+                            <div class="card-subtitle">
+                                <div class="description-text is-collapsed" id="description-text-{{ loop.index }}">{{ full_description }}</div>
+                                {% if full_description|length > 240 %}
+                                <button
+                                    type="button"
+                                    class="description-toggle"
+                                    data-description-target="{{ loop.index }}"
+                                    aria-expanded="false"
+                                >Read more</button>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score {{ "%.2f"|format(item.relevance_score) }}</span>
+                        <span class="badge score">Score <span class="score-value">&nbsp;{{ "%.2f"|format(item.relevance_score) }}</span></span>
                         {% for category in item.matched_categories %}
                         <span class="badge">{{ category }}</span>
                         {% endfor %}
@@ -104,11 +124,11 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>{{ item.posting_date }}</span>
+                                    <span>{{ item.posting_date|display_date }}</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>{{ item.due_date or "Not listed" }}</span>
+                                    <span>{{ item.due_date|display_date if item.due_date else "Not listed" }}</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
@@ -128,11 +148,13 @@
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    <span>{{ item.contact_email or item.bid_response_email or "Not listed" }}</span>
+                                    {% set email = item.contact_email or item.bid_response_email %}
+                                    <span>{% if email %}<a href="mailto:{{ email }}">{{ email }}</a>{% else %}Not listed{% endif %}</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    <span>{{ item.contact_phone or "Not listed" }}</span>
+                                    {% set phone = item.contact_phone %}
+                                    <span>{% if phone %}<a href="tel:{{ phone|replace('(', '')|replace(')', '')|replace(' ', '')|replace('-', '') }}">{{ phone }}</a>{% else %}Not listed{% endif %}</span>
                                 </div>
                             </div>
                         </section>
@@ -141,12 +163,27 @@
                         <h3 class="section-title">Classification</h3>
                         <p class="classification">{{ item.category_classification or "Not listed" }}</p>
                     </section>
+                    {% if item.ai_summary %}
+                    <section class="panel">
+                        <h3 class="section-title">AI Summary</h3>
+                        <p class="classification">{{ item.ai_summary }}</p>
+                    </section>
+                    {% endif %}
                     {% if item.attachment_urls %}
                     <section class="panel attachments">
                         <h3 class="section-title">Attachments</h3>
+                        {% if item.pdf_extraction_summary %}
+                        <p class="classification">{{ item.pdf_extraction_summary }}</p>
+                        {% endif %}
                         <ul class="list">
                             {% for attachment in item.attachment_urls %}
-                            <li><a href="{{ attachment.url }}">{{ attachment.name }}</a>{% if attachment.description %} - {{ attachment.description }}{% endif %}</li>
+                            <li>
+                                <a href="{{ attachment.url }}">{{ attachment.name }}</a>
+                                {% if attachment.description %} - {{ attachment.description }}{% endif %}
+                                {% if attachment.is_pdf and attachment.pdf_extraction_status %}
+                                <div><strong>PDF Extraction:</strong> {{ attachment.pdf_extraction_status }}{% if attachment.pdf_page_count %} | {{ attachment.pdf_page_count }} page(s){% endif %}</div>
+                                {% endif %}
+                            </li>
                             {% endfor %}
                         </ul>
                     </section>
@@ -157,10 +194,32 @@
         </div>
         <section class="section">
             <h2>Methodology</h2>
-            <p>This report uses the live paginated ESBD backend service to collect the full current open-solicitation result set, scores that full listing set, and then enriches a generous shortlist through the ESBD details service to extract required fields such as title, solicitation ID, contact information, posting date, due date, classification, and attachment links.</p>
+            <p>This report uses the live paginated ESBD backend service to collect the full current open-solicitation result set, scores that full listing set, and then looks up a generous shortlist through the ESBD details service to extract required fields such as title, solicitation ID, contact information, posting date, due date, classification, and attachment links.</p>
             <p>Relevance is determined by weighted keyword and fuzzy matching against the vendor service categories from the take-home brief. Matches in solicitation titles and classification codes count more heavily than weaker description-only signals, while clearly unrelated terms such as software-only or legal-service signals are penalized.</p>
-            <p>This implementation favors a straightforward HTTP-first scraper because the required ESBD data is available through the public site and its live JSON services without browser automation. Some additional relevance signals may still live inside attached PDFs, which are linked here but not yet parsed in this MVP.</p>
+            <p>This implementation favors a straightforward HTTP-first scraper because the required ESBD data is available through the public site and its live JSON services without browser automation. For a smaller high-confidence subset of candidates, the scraper also downloads PDF attachments, classifies them as text-based or likely scanned based on extractable text, and folds extracted PDF text back into ranking. If a Gemini API key is supplied, the final results can also include AI-generated summaries based on that PDF text.</p>
         </section>
     </div>
+    <script>
+        document.querySelectorAll(".description-toggle").forEach(function (button) {
+            button.addEventListener("click", function () {
+                var target = button.getAttribute("data-description-target");
+                var description = document.getElementById("description-text-" + target);
+                if (!description) {
+                    return;
+                }
+
+                var isExpanded = button.getAttribute("aria-expanded") === "true";
+                if (isExpanded) {
+                    description.classList.add("is-collapsed");
+                    button.textContent = "Read more";
+                    button.setAttribute("aria-expanded", "false");
+                } else {
+                    description.classList.remove("is-collapsed");
+                    button.textContent = "Read less";
+                    button.setAttribute("aria-expanded", "true");
+                }
+            });
+        });
+    </script>
 </body>
 </html>

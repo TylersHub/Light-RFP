@@ -8,6 +8,13 @@ class Attachment:
     name: str
     url: str
     description: str = ""
+    local_path: str = ""
+    is_pdf: bool = False
+    pdf_extraction_status: str = ""
+    pdf_is_scanned: bool = False
+    pdf_page_count: int = 0
+    pdf_text_length: int = 0
+    pdf_text: str = ""
 
 
 @dataclass
@@ -32,6 +39,12 @@ class Solicitation:
     attachment_urls: list[Attachment] = field(default_factory=list)
     addendum_text: str = ""
     raw_text_blob: str = ""
+    pdf_text_blob: str = ""
+    pdf_extraction_summary: str = ""
+    ai_summary: str = ""
+    ai_summary_model: str = ""
+    ai_summary_error: str = ""
+    ai_summary_source: str = ""
     matched_categories: list[str] = field(default_factory=list)
     score_explanation: list[str] = field(default_factory=list)
     relevance_score: float = 0.0

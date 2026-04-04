@@ -19,6 +19,7 @@ def score_solicitation(solicitation: Solicitation) -> Solicitation:
     title = solicitation.title.lower()
     classification = solicitation.category_classification.lower()
     description = solicitation.description.lower()
+    pdf_text = solicitation.pdf_text_blob.lower()
     attachments = " ".join(
         f"{attachment.name} {attachment.description}"
         for attachment in solicitation.attachment_urls
@@ -31,6 +32,7 @@ def score_solicitation(solicitation: Solicitation) -> Solicitation:
         title_hits = count_keyword_hits(title, keywords)
         classification_hits = count_keyword_hits(classification, keywords)
         description_hits = count_keyword_hits(description, keywords)
+        pdf_hits = count_keyword_hits(pdf_text, keywords)
         attachment_hits = count_keyword_hits(attachments, keywords)
         direct_category_hits = int(category.lower() in combined)
         bonus = fuzzy_bonus(combined, category, keywords)
@@ -39,6 +41,7 @@ def score_solicitation(solicitation: Solicitation) -> Solicitation:
             5 * title_hits
             + 4 * classification_hits
             + 3 * description_hits
+            + 2 * pdf_hits
             + 2 * attachment_hits
             + 3 * direct_category_hits
             + bonus
@@ -51,6 +54,8 @@ def score_solicitation(solicitation: Solicitation) -> Solicitation:
             reasons.append(f"classification hits={classification_hits}")
         if description_hits:
             reasons.append(f"description hits={description_hits}")
+        if pdf_hits:
+            reasons.append(f"pdf hits={pdf_hits}")
         if attachment_hits:
             reasons.append(f"attachment hits={attachment_hits}")
         if direct_category_hits:

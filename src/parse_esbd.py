@@ -98,43 +98,19 @@ def html_to_text(value: str) -> str:
     return normalize_whitespace(soup.get_text(" ", strip=True))
 
 
-def parse_listing_page(soup: BeautifulSoup, base_url: str) -> list[Solicitation]:
-    rows: list[Solicitation] = []
-    for row in soup.select(".esbd-result-row"):
-        title_link = row.select_one(".esbd-result-title a")
-        if not title_link:
-            continue
+def html_to_display_text(value: str) -> str:
+    if not value:
+        return ""
 
-        title = normalize_whitespace(title_link.get_text(" ", strip=True))
-        detail_url = urljoin(base_url, title_link.get("href", ""))
+    soup = BeautifulSoup(value, "lxml")
+    for tag in soup.find_all(["br"]):
+        tag.replace_with("\n")
 
-        values: dict[str, str] = {}
-        for paragraph in row.select("p"):
-            strong = paragraph.find("strong")
-            if not strong:
-                continue
-            label = normalize_whitespace(strong.get_text(" ", strip=True)).rstrip(":")
-            paragraph_text = normalize_whitespace(paragraph.get_text(" ", strip=True))
-            value = normalize_whitespace(paragraph_text.replace(strong.get_text(" ", strip=True), "", 1))
-            values[label] = value
-
-        due_date = values.get("Due Date", "")
-        due_time = values.get("Due Time", "")
-        rows.append(
-            Solicitation(
-                title=title,
-                solicitation_id=values.get("Solicitation ID", ""),
-                status=values.get("Status", ""),
-                agency_number=values.get("Agency/Texas SmartBuy Member Number", ""),
-                posting_date=safe_parse_date(values.get("Posting Date", "")),
-                due_date=due_date,
-                due_time=due_time,
-                due_datetime=safe_parse_date(f"{due_date} {due_time}".strip()),
-                detail_url=detail_url,
-            )
-        )
-
-    return rows
+    lines = [
+        normalize_whitespace(line)
+        for line in soup.get_text("\n", strip=True).splitlines()
+    ]
+    return "\n".join(line for line in lines if line)
 
 
 def parse_service_listing_response(
@@ -210,7 +186,7 @@ def parse_detail_page(
         if not label_tag or not rich_text:
             continue
         label = normalize_whitespace(label_tag.get_text(" ", strip=True)).rstrip(":")
-        value = normalize_whitespace(rich_text.get_text(" ", strip=True))
+        value = html_to_display_text(str(rich_text))
         if label == "Solicitation Description":
             description = value
         elif label == "Addendum":
@@ -261,8 +237,8 @@ def parse_detail_page(
             status,
             agency_name,
             category_classification,
-            description,
-            addendum_text,
+            normalize_whitespace(description),
+            normalize_whitespace(addendum_text),
             " ".join(attachment.name for attachment in attachments),
             " ".join(attachment.description for attachment in attachments),
         ]
@@ -317,8 +293,8 @@ def parse_detail_payload(payload: dict, fallback: Solicitation, base_url: str) -
     due_time = normalize_whitespace(payload.get("responseTime", "")) or fallback.due_time
     due_datetime = safe_parse_date(f"{due_date} {due_time}".strip())
     category_classification = normalize_whitespace(payload.get("nigpCodes", "")) or fallback.category_classification
-    description = html_to_text(payload.get("description", ""))
-    addendum_text = html_to_text(payload.get("addendum", ""))
+    description = html_to_display_text(payload.get("description", ""))
+    addendum_text = html_to_display_text(payload.get("addendum", ""))
 
     attachments: list[Attachment] = []
     for attachment in payload.get("attachments", []) or []:
@@ -343,8 +319,8 @@ def parse_detail_payload(payload: dict, fallback: Solicitation, base_url: str) -
             status,
             agency_name,
             category_classification,
-            description,
-            addendum_text,
+            normalize_whitespace(description),
+            normalize_whitespace(addendum_text),
             " ".join(attachment.name for attachment in attachments),
             " ".join(attachment.description for attachment in attachments),
         ]

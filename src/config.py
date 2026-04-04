@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 BASE_URL = "https://www.txsmartbuy.gov"
 LISTING_PATH = "/esbd"
 LISTING_URL = f"{BASE_URL}{LISTING_PATH}"
@@ -10,7 +12,24 @@ OPEN_STATUSES = {"Posted", "Addendum Posted"}
 OPEN_STATUS_FILTER = "1"
 DETAIL_CANDIDATE_MULTIPLIER = 8
 MIN_DETAIL_CANDIDATES = 120
+MAX_LISTING_WORKERS = 8
 MAX_DETAIL_WORKERS = 8
+DETAIL_CACHE_DIR = Path("data/processed/detail_cache")
+DETAIL_CACHE_TTL_SECONDS = 3600
+PDF_CANDIDATE_MULTIPLIER = 2
+MIN_PDF_CANDIDATES = 40
+MAX_PDF_WORKERS = 4
+PDF_DOWNLOAD_DIR = Path("data/pdfs")
+PDF_CACHE_TTL_SECONDS = 3600
+AI_SUMMARY_TIMEOUT_SECONDS = 90
+AI_SUMMARY_CONTEXT_CHARS_PER_RECORD = 5000
+AI_SUMMARY_BATCH_SIZE = 5
+AI_SUMMARY_BATCH_CHAR_BUDGET = 32000
+AI_SUMMARY_MIN_INTERVAL_SECONDS = 2
+AI_SUMMARY_MAX_RETRIES = 2
+AI_SUMMARY_CACHE_PATH = Path("data/processed/ai_summary_cache.json")
+DEFAULT_GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_API_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
