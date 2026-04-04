@@ -15,6 +15,7 @@ class Attachment:
     pdf_page_count: int = 0
     pdf_text_length: int = 0
     pdf_text_preview: str = ""
+    pdf_text: str = ""
 
 
 @dataclass
@@ -45,6 +46,7 @@ class Solicitation:
     ai_summary: str = ""
     ai_summary_model: str = ""
     ai_summary_error: str = ""
+    ai_summary_source: str = ""
     matched_categories: list[str] = field(default_factory=list)
     score_explanation: list[str] = field(default_factory=list)
     relevance_score: float = 0.0

@@ -10,6 +10,8 @@ Command-line scraper for the LightRFP take-home assessment. It fetches live ESBD
 - Downloads PDF bid attachments for a shortlist of strong candidates
 - Extracts text from text-based PDFs and flags PDFs that appear to be scanned or image-based
 - Optionally generates AI summaries from extracted PDF text when a Gemini API key is provided
+- Only generates summaries for the final report results, not every candidate examined during scraping
+- Caches successful Gemini summaries locally so repeated runs do not keep re-requesting the same summaries
 - Scores each opportunity against the LightRFP vendor-service categories
 - Analyzes the full set of open ESBD solicitations exposed by the live paginated ESBD service by default
 - Outputs the top 20 ranked results as `output/esbd_results.html`
@@ -131,7 +133,7 @@ I began with the public ESBD page specified in the assignment: `https://www.txsm
 
 The scraper requests every page of currently open ESBD solicitations from the live listing service, scores the full live open-solicitation set, enriches a generous shortlist of the strongest candidates through the ESBD details service, and then downloads PDF attachments for a smaller top-tier subset before producing the final top 20. This keeps full-portal coverage while avoiding hundreds of unnecessary detail and PDF requests. The score uses weighted keyword and fuzzy matching across title, classification, description, attachment names, and extracted PDF text, then applies penalties to clearly unrelated software-only, medical, legal, or insurance-oriented bids.
 
-When `--enable-ai-summaries` is used and `GEMINI_API_KEY` is set, the scraper sends extracted PDF text from the final results to the Gemini API to generate concise two-sentence summaries. This AI step is optional so the project remains runnable end-to-end without requiring paid API access.
+When `--enable-ai-summaries` is used and `GEMINI_API_KEY` is set, the scraper sends extracted PDF text only for the final report results to the Gemini API to generate concise two-sentence summaries. To keep the runtime reasonable and avoid quota spikes, the scraper batches multiple final-report solicitations into each Gemini request, rate-limits those batch requests, and caches successful responses locally under `data/processed/` so repeated runs do not keep hitting the API for unchanged solicitations. This AI step is optional so the project remains runnable end-to-end without requiring paid API access.
 
 Current trade-offs:
 
@@ -139,5 +141,6 @@ Current trade-offs:
 - PDF extraction only runs on a smaller high-confidence subset for performance reasons, so attachment text is not collected for every open solicitation.
 - Scanned or image-based PDFs are detected heuristically by extractable-text density, but this project does not OCR them yet.
 - AI summaries are optional and depend on the presence of a Gemini API key.
+- Summary quality still depends on the quality of the attached PDFs; forms, standard terms, and boilerplate-heavy packages can produce weaker summaries than solicitations with a clear scope-of-work document.
 - The scraper discovers the ESBD service path from the live site bundle and falls back to a known service path, but a major Texas SmartBuy frontend redesign could still require a small update.
 

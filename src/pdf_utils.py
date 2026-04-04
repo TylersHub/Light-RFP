@@ -126,6 +126,7 @@ def extract_attachment_pdf(
         updated.pdf_page_count = page_count
         updated.pdf_text_length = len(pdf_text)
         updated.pdf_text_preview = build_pdf_preview(pdf_text)
+        updated.pdf_text = pdf_text
         return updated, pdf_text
     except requests.RequestException:
         updated.pdf_extraction_status = "Download failed"
