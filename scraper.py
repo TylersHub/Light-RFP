@@ -116,7 +116,7 @@ def main() -> int:
             pre_ranked[:detail_candidate_count]
         )
         print(
-            f"Detail lookup finished for {len(detailed_candidates)} candidates "
+            f"Detail lookup finished for {len(detailed_candidates)} top-ranked listing candidates "
             f"in {time.perf_counter() - started_at:.1f}s"
         )
     except Exception as exc:  # pragma: no cover
@@ -145,7 +145,7 @@ def main() -> int:
             ranked[:pdf_candidate_count]
         )
         print(
-            f"PDF extraction finished for {len(pdf_candidates)} candidates "
+            f"PDF extraction finished for {len(pdf_candidates)} highest-ranked detail-reviewed candidates "
             f"in {time.perf_counter() - started_at:.1f}s"
         )
     except Exception as exc:  # pragma: no cover
@@ -194,7 +194,7 @@ def main() -> int:
         reverse=True,
     )
     print(
-        f"Live detail refresh finished for {len(refreshed_finalists)} finalists "
+        f"Live detail refresh finished for {len(refreshed_finalists)} likely final-report candidates "
         f"in {time.perf_counter() - started_at:.1f}s"
     )
     top_results = final_ranked[: args.top_n]
@@ -215,7 +215,7 @@ def main() -> int:
             reverse=True,
         )[: args.top_n]
         print(
-            f"Final-report PDF refresh finished for {len(top_results)} results "
+            f"Final-report PDF refresh finished for {len(top_results)} final report results "
             f"in {time.perf_counter() - started_at:.1f}s"
         )
 

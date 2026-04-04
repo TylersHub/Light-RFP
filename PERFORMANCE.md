@@ -1,98 +1,120 @@
 # Performance Notes
 
-This document explains the current performance optimizations in the ESBD scraper and why the newer flow is faster without dropping the accuracy safeguards that matter for the take-home.
+This document explains how the scraper balances speed with accuracy and what the current runtime looks like with the code as it exists now.
 
-## Main bottlenecks that were fixed
+## Current approach
 
-The scraper had three major performance costs:
+The scraper uses a staged pipeline:
 
-1. It fetched ESBD listing pages one at a time.
-2. It could re-fetch the same detail payload more than once for the same solicitation.
-3. It re-parsed downloaded PDFs on every run, even when the files were already on disk.
-
-For AI-enabled runs, there was a fourth issue:
-
-4. The Gemini batch request was too constrained on output tokens, which increased the chance of retries or weak responses.
-
-## Current pipeline
-
-The scraper now uses this staged flow:
-
-1. Fetch the full open ESBD listing set from the live paginated service.
-2. Score the full listing set.
-3. Look up full details for a large shortlist of likely contenders.
-4. Re-score that shortlist using the additional detail.
-5. Download and parse PDFs for a smaller top-tier subset.
+1. Fetch the full current open ESBD listing set from the live paginated listing service.
+2. Score that full listing set.
+3. Fetch full detail records for a large shortlist of likely contenders.
+4. Re-score that shortlist using the added detail.
+5. Download and extract PDF text for a smaller top-tier subset.
 6. Re-score again with PDF text included.
-7. Generate AI summaries only for the final top-20 report results when enabled.
-8. Render the HTML report.
+7. Re-fetch live detail records for the likely finalists before locking the final report.
+8. If enabled, run Gemini summaries only for the final top-20 results.
+9. Render the HTML report.
 
 This keeps full listing coverage while limiting the expensive detail, PDF, and AI work to records that can realistically affect the final report.
 
-## What changed
+## What is cached
 
-### Parallel listing-page collection
+The scraper does use caching, but only for parts of the pipeline that are expensive and reasonably stable during a short window.
 
-The ESBD listing service is paginated, so fetching all open solicitations serially was taking most of the runtime by itself. The scraper now fetches page 1 first to discover the total number of pages, then requests the remaining pages in parallel and restores the original page order before continuing.
+### Detail payload cache
 
-### Single-pass detail lookup plus local caching
+- Location: `data/processed/detail_cache/`
+- Contents: ESBD detail-service JSON payloads
+- Time-to-live: `1 hour`
 
-Detail lookup now does one structured detail fetch per solicitation instead of looping over the same payload repeatedly. Successful detail payloads are cached locally under `data/processed/detail_cache/` for a limited time, so repeated runs do not keep re-requesting unchanged records.
+These are used to avoid re-requesting the same detail record repeatedly during nearby runs.
 
-### Cached PDF extraction results
+### PDF extraction cache
 
-Downloaded PDFs were already being reused from disk, but their text extraction was being repeated every run. The scraper now stores a small JSON sidecar next to each downloaded PDF with:
+- Location: JSON sidecar files next to downloaded PDFs in `data/pdfs/`
+- Contents:
+  - extracted text
+  - extraction status
+  - scanned/image-based flag
+  - page count
+- Time-to-live: `1 hour`
 
-- extractable text
-- extraction status
-- scanned/image-based flag
-- page count
+These are used to avoid re-parsing the same local PDF file during nearby runs.
 
-If the local PDF file has not changed and the cache is still fresh, the scraper reuses that extraction result immediately.
+### AI summary cache
 
-### Better-scoped AI summarization
+- Location: `data/processed/ai_summary_cache.json`
+- Contents: successful Gemini summaries keyed by model and extracted PDF text hash
 
-Gemini summaries still only run for the final report results. The summarizer now uses:
+This only helps when the same PDF-backed report result appears again with unchanged extracted text and the previous Gemini response was good enough to keep.
 
-- a shorter per-record context budget
-- a larger batch character budget
-- a lower minimum inter-request delay
-- a batch output-token budget sized to the number of summaries requested
+## What is not cached
 
-That makes the AI step faster and reduces needless retries.
+- The ESBD listing pages are fetched live on every run.
+- The likely finalists go through a live detail refresh before the final top 20 is locked.
+- When AI summaries are enabled, the final report results go through a final PDF download/extraction pass before summarization.
 
-## Why the optimizations are still safe
+So the performance improvements are not coming from freezing the whole scrape. The scraper still checks the live site each run where freshness matters most.
 
-- The scraper still analyzes the full live open listing set from ESBD.
-- Detail lookup still happens before final output for a much larger set than the final 20.
+## Why it is faster now
+
+The main performance improvements are:
+
+1. Parallel listing-page fetches instead of walking the ESBD listing pages one at a time.
+2. One detail fetch per solicitation instead of repeated fetch loops.
+3. Reuse of recent detail payloads and PDF extraction results when they are still fresh.
+4. Gemini batching that only runs for the final report results, not for earlier candidates.
+
+## Why this is still safe
+
+- The full open ESBD listing set is still analyzed every run.
+- Detail fetches still happen before final output for a much larger set than the final 20.
 - PDF extraction still happens before the final ranking is locked.
-- Cached detail and PDF data are only reused for a limited time, which keeps repeat runs fast without making the scraper permanently stale.
+- The final likely winners get a live detail refresh before the report is written.
+- The caches are short-lived, which limits staleness.
 - If a parallel page fetch fails, the scraper falls back to refetching that page directly.
 
-## Measured results
+## Current measured runtimes
 
-Observed live runtimes on April 3, 2026:
+Measured live on April 3, 2026 with the current code:
 
-- Earlier optimized version, before the latest cache and pagination work:
-  - about `2 minutes` without AI
-  - about `3 minutes` with AI
-- Current version after the latest optimizations:
-  - about `15 seconds` without AI on a warm cache run
-  - about `26 seconds` with AI on a warm cache run
+- `python scraper.py`
+  - total runtime: about `23.5s`
+- `python scraper.py --enable-ai-summaries --output output\esbd_results.html`
+  - total runtime: about `57.4s`
 
-One representative live run printed these stage timings:
+Representative no-AI stage timings from the current code:
 
-- listing collection: `8.5s`
-- initial scoring: `0.7s`
-- detail lookup: `0.1s`
-- PDF extraction: `0.6s`
-- final scoring: `4.5s`
-- AI summarization for 20 report results: `11.0s`
+- listing collection: `9.7s`
+- initial scoring: `0.9s`
+- detail lookup for 160 candidates: `0.2s`
+- post-detail rescoring: `0.4s`
+- PDF extraction for 40 candidates: `0.7s`
+- final scoring: `5.7s`
+- live detail refresh for 40 finalists: `5.9s`
 
-Exact runtimes will vary with network conditions, the number of currently open ESBD solicitations, Gemini response time, and whether local caches are already populated.
+Representative AI-enabled stage timings from the current code:
+
+- listing collection: `9.3s`
+- initial scoring: `0.8s`
+- detail lookup for 160 candidates: `0.2s`
+- post-detail rescoring: `0.4s`
+- PDF extraction for 40 candidates: `0.7s`
+- final scoring: `5.5s`
+- live detail refresh for 40 finalists: `5.8s`
+- final-report PDF refresh for 20 results: `3.4s`
+- AI summarization for 20 report results: `31.3s`
+
+Exact runtimes will vary based on:
+
+- network conditions
+- the number of currently open ESBD solicitations
+- whether the detail and PDF caches are already warm
+- Gemini response time and rate limiting
 
 ## Trade-offs
 
-- The first run on a clean machine is still slower than a repeat run because it has to build the detail and PDF caches.
-- Cached data is intentionally temporary, so repeat-run speed comes from reusing recent work rather than pretending the source never changes.
-- The shortlist-first design is a practical performance choice, but it assumes the strongest early relevance signals are already visible in listing metadata before full detail lookup.
+- A warm-cache repeat run is faster than a first run on a clean machine.
+- The shortlist-first design is a performance trade-off: it assumes the strongest early relevance signals are already visible in listing metadata before full detail and PDF work.
+- AI summary speed depends heavily on Gemini latency and quota behavior, so the AI-enabled run is still meaningfully slower than the no-AI run.
