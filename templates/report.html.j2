@@ -174,7 +174,7 @@
         </div>
         <section class="section">
             <h2>Methodology</h2>
-            <p>This report uses the live paginated ESBD backend service to collect the full current open-solicitation result set, scores that full listing set, and then enriches a generous shortlist through the ESBD details service to extract required fields such as title, solicitation ID, contact information, posting date, due date, classification, and attachment links.</p>
+            <p>This report uses the live paginated ESBD backend service to collect the full current open-solicitation result set, scores that full listing set, and then looks up a generous shortlist through the ESBD details service to extract required fields such as title, solicitation ID, contact information, posting date, due date, classification, and attachment links.</p>
             <p>Relevance is determined by weighted keyword and fuzzy matching against the vendor service categories from the take-home brief. Matches in solicitation titles and classification codes count more heavily than weaker description-only signals, while clearly unrelated terms such as software-only or legal-service signals are penalized.</p>
             <p>This implementation favors a straightforward HTTP-first scraper because the required ESBD data is available through the public site and its live JSON services without browser automation. For a smaller high-confidence subset of candidates, the scraper also downloads PDF attachments, classifies them as text-based or likely scanned based on extractable text, and folds extracted PDF text back into ranking. If a Gemini API key is supplied, the final results can also include AI-generated summaries based on that PDF text.</p>
         </section>

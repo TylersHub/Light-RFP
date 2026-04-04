@@ -6,12 +6,12 @@ Command-line scraper for the LightRFP take-home assessment. It fetches live ESBD
 
 - Fetches current ESBD solicitation listings from `https://www.txsmartbuy.gov/esbd`
 - Treats `Posted` and `Addendum Posted` solicitations as currently open opportunities
-- Uses the ESBD details service to enrich the strongest candidates with the required metadata
+- Uses the ESBD details service to look up the strongest candidates and collect the required metadata
 - Downloads PDF bid attachments for a shortlist of strong candidates
 - Extracts text from text-based PDFs and flags PDFs that appear to be scanned or image-based
 - Optionally generates AI summaries from extracted PDF text when a Gemini API key is provided
 - Only generates summaries for the final report results, not every candidate examined during scraping
-- Reuses cached ESBD detail payloads and cached PDF extraction results on repeat runs for much faster performance
+- Reuses short-lived cached ESBD detail payloads and cached PDF extraction results on repeat runs for much faster performance
 - Scores each opportunity against the LightRFP vendor-service categories
 - Analyzes the full set of open ESBD solicitations exposed by the live paginated ESBD service by default
 - Outputs the top 20 ranked results as `output/esbd_results.html`
@@ -85,6 +85,14 @@ python scraper.py --top-n 20 --max-candidates 50 --output output/esbd_results.ht
 
 `--max-candidates` limits how many live ESBD listing records are analyzed during the initial ranking stage.
 
+Useful AI flag:
+
+```powershell
+python scraper.py --enable-ai-summaries --ai-context-chars-per-record 5000
+```
+
+`--ai-context-chars-per-record` controls how much PDF-derived context is sent to Gemini for each final report result.
+
 ### 7. Optional: enable AI summaries
 
 PDF extraction runs automatically, but AI summaries are optional because they require a Gemini API key.
@@ -133,7 +141,7 @@ python scraper.py
 
 I began with the public ESBD page specified in the assignment: `https://www.txsmartbuy.gov/esbd`. After inspecting the site behavior, I found that the search UI is backed by a paginated JSON listing service and a structured details service, so the scraper uses those live ESBD services instead of relying on only the visible HTML results.
 
-The scraper requests every page of currently open ESBD solicitations from the live listing service, scores the full live open-solicitation set, enriches a generous shortlist of the strongest candidates through the ESBD details service, and then downloads PDF attachments for a smaller top-tier subset before producing the final top 20. Listing-page collection now runs in parallel so the full open set can still be analyzed without waiting on a long serial page walk. The score uses weighted keyword and fuzzy matching across title, classification, description, attachment names, and extracted PDF text, then applies penalties to clearly unrelated software-only, medical, legal, or insurance-oriented bids.
+The scraper requests every page of currently open ESBD solicitations from the live listing service, scores the full live open-solicitation set, looks up a generous shortlist of the strongest candidates through the ESBD details service, and then downloads PDF attachments for a smaller top-tier subset before producing the final top 20. Listing-page collection now runs in parallel so the full open set can still be analyzed without waiting on a long serial page walk. The score uses weighted keyword and fuzzy matching across title, classification, description, attachment names, and extracted PDF text, then applies penalties to clearly unrelated software-only, medical, legal, or insurance-oriented bids.
 
 When `--enable-ai-summaries` is used and `GEMINI_API_KEY` is set, the scraper sends extracted PDF text only for the final report results to the Gemini API to generate concise two-sentence summaries. To keep the runtime reasonable and avoid quota spikes, the scraper batches multiple final-report solicitations into each Gemini request and rate-limits those batch requests. Detail payloads and PDF extraction results are also cached locally under `data/processed/` and `data/pdfs/` so repeat runs do not keep redoing the same work. This AI step is optional so the project remains runnable end-to-end without requiring paid API access.
 
@@ -141,6 +149,7 @@ Current trade-offs:
 
 - The shortlist-first approach is much faster, but it assumes the strongest relevance signals are already visible in the ESBD listing data, with details serving mainly as refinement.
 - PDF extraction only runs on a smaller high-confidence subset for performance reasons, so attachment text is not collected for every open solicitation.
+- Detail and PDF caches are intentionally short-lived so repeat runs stay fast without drifting too far from the live site.
 - Scanned or image-based PDFs are detected heuristically by extractable-text density, but this project does not OCR them yet.
 - AI summaries are optional and depend on the presence of a Gemini API key.
 - Summary quality still depends on the quality of the attached PDFs; forms, standard terms, and boilerplate-heavy packages can produce weaker summaries than solicitations with a clear scope-of-work document.

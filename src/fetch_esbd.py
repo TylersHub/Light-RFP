@@ -33,7 +33,7 @@ from .parse_esbd import (
     parse_detail_payload,
     parse_service_listing_response,
 )
-from .pdf_utils import enrich_solicitation_pdfs
+from .pdf_utils import download_and_extract_solicitation_pdfs
 
 
 class ESBDScraper:
@@ -115,25 +115,25 @@ class ESBDScraper:
         return response.json()
 
     def is_detail_parse_complete(
-        self, enriched_record: Solicitation, fallback: Solicitation
+        self, detailed_record: Solicitation, fallback: Solicitation
     ) -> bool:
         has_contact = any(
             [
-                enriched_record.contact_name,
-                enriched_record.contact_email,
-                enriched_record.contact_phone,
-                enriched_record.bid_response_email,
+                detailed_record.contact_name,
+                detailed_record.contact_email,
+                detailed_record.contact_phone,
+                detailed_record.bid_response_email,
             ]
         )
-        has_description = bool(enriched_record.description or enriched_record.brief_description)
-        has_classification = bool(enriched_record.category_classification)
-        has_attachments = bool(enriched_record.attachment_urls)
+        has_description = bool(detailed_record.description or detailed_record.brief_description)
+        has_classification = bool(detailed_record.category_classification)
+        has_attachments = bool(detailed_record.attachment_urls)
 
         improved_over_fallback = any(
             [
-                enriched_record.category_classification
-                and enriched_record.category_classification != fallback.category_classification,
-                enriched_record.description,
+                detailed_record.category_classification
+                and detailed_record.category_classification != fallback.category_classification,
+                detailed_record.description,
                 has_contact,
                 has_attachments,
             ]
@@ -145,9 +145,10 @@ class ESBDScraper:
         self,
         solicitation_id: str,
         session: requests.Session | None = None,
+        use_cache: bool = True,
     ) -> dict:
         cache_path = self.detail_cache_dir / f"{solicitation_id}.json"
-        cached_payload = self._read_cached_payload(cache_path)
+        cached_payload = self._read_cached_payload(cache_path) if use_cache else None
         if cached_payload is not None:
             return cached_payload
 
@@ -184,47 +185,50 @@ class ESBDScraper:
         except OSError:
             return
 
-    def enrich_solicitation(
+    def fetch_solicitation_details(
         self,
         record: Solicitation,
         session: requests.Session | None = None,
+        use_cache: bool = True,
     ) -> Solicitation | None:
         if not record.detail_url:
             return record
 
-        enriched_record = record
+        detailed_record = record
         try:
             detail_payload = self.fetch_detail_payload(
-                record.solicitation_id, session=session
+                record.solicitation_id,
+                session=session,
+                use_cache=use_cache,
             )
-            enriched_record = parse_detail_payload(
+            detailed_record = parse_detail_payload(
                 payload=detail_payload,
                 fallback=record,
                 base_url=self.base_url,
             )
         except (requests.RequestException, ValueError):
-            enriched_record = record
+            detailed_record = record
 
-        if enriched_record.status.strip() not in OPEN_STATUSES:
+        if detailed_record.status.strip() not in OPEN_STATUSES:
             return None
-        if self.is_detail_parse_complete(enriched_record, record):
-            return enriched_record
+        if self.is_detail_parse_complete(detailed_record, record):
+            return detailed_record
 
         try:
             detail_html = self.fetch_html(record.detail_url, session=session)
             detail_soup = BeautifulSoup(detail_html, "lxml")
             html_record = parse_detail_page(
                 detail_soup=detail_soup,
-                fallback=enriched_record,
+                fallback=detailed_record,
                 base_url=self.base_url,
             )
             if html_record.status.strip() not in OPEN_STATUSES:
                 return None
-            if self.is_detail_parse_complete(html_record, enriched_record):
+            if self.is_detail_parse_complete(html_record, detailed_record):
                 return html_record
             return html_record
         except requests.RequestException:
-            return enriched_record
+            return detailed_record
 
     def collect_listing_solicitations(
         self, max_candidates: int | None = None
@@ -271,10 +275,11 @@ class ESBDScraper:
 
         return listings
 
-    def enrich_solicitations(
+    def fetch_details_for_records(
         self,
         records: list[Solicitation],
         max_workers: int | None = None,
+        use_cache: bool = True,
     ) -> list[Solicitation]:
         if not records:
             return []
@@ -284,9 +289,13 @@ class ESBDScraper:
 
         def task(record: Solicitation) -> Solicitation | None:
             session = self._build_session()
-            return self.enrich_solicitation(record, session=session)
+            return self.fetch_solicitation_details(
+                record,
+                session=session,
+                use_cache=use_cache,
+            )
 
-        enriched: list[Solicitation | None] = [None] * len(records)
+        detailed_records: list[Solicitation | None] = [None] * len(records)
         with ThreadPoolExecutor(max_workers=worker_count) as executor:
             future_map = {
                 executor.submit(task, record): index
@@ -295,29 +304,32 @@ class ESBDScraper:
             for future in as_completed(future_map):
                 index = future_map[future]
                 try:
-                    enriched[index] = future.result()
+                    detailed_records[index] = future.result()
                 except Exception:
-                    enriched[index] = records[index]
+                    detailed_records[index] = records[index]
 
-        return [record for record in enriched if record]
+        return [record for record in detailed_records if record]
 
-    def enrich_solicitation_with_pdfs(
+    def download_and_extract_pdfs_for_solicitation(
         self,
         record: Solicitation,
         session: requests.Session | None = None,
+        use_cache: bool = True,
     ) -> Solicitation:
         client = session or self.session
-        return enrich_solicitation_pdfs(
+        return download_and_extract_solicitation_pdfs(
             session=client,
             record=record,
             base_dir=self.pdf_download_dir,
             timeout_seconds=REQUEST_TIMEOUT_SECONDS,
+            use_cache=use_cache,
         )
 
-    def enrich_solicitations_with_pdfs(
+    def download_and_extract_pdfs_for_records(
         self,
         records: list[Solicitation],
         max_workers: int | None = None,
+        use_cache: bool = True,
     ) -> list[Solicitation]:
         if not records:
             return []
@@ -327,9 +339,13 @@ class ESBDScraper:
 
         def task(record: Solicitation) -> Solicitation:
             session = self._build_session()
-            return self.enrich_solicitation_with_pdfs(record, session=session)
+            return self.download_and_extract_pdfs_for_solicitation(
+                record,
+                session=session,
+                use_cache=use_cache,
+            )
 
-        enriched: list[Solicitation | None] = [None] * len(records)
+        records_with_pdfs: list[Solicitation | None] = [None] * len(records)
         with ThreadPoolExecutor(max_workers=worker_count) as executor:
             future_map = {
                 executor.submit(task, record): index
@@ -338,12 +354,12 @@ class ESBDScraper:
             for future in as_completed(future_map):
                 index = future_map[future]
                 try:
-                    enriched[index] = future.result()
+                    records_with_pdfs[index] = future.result()
                 except Exception:
-                    enriched[index] = records[index]
+                    records_with_pdfs[index] = records[index]
 
-        return [record for record in enriched if record]
+        return [record for record in records_with_pdfs if record]
 
     def collect_solicitations(self, max_candidates: int | None = None) -> list[Solicitation]:
         listings = self.collect_listing_solicitations(max_candidates=max_candidates)
-        return self.enrich_solicitations(listings)
+        return self.fetch_details_for_records(listings)

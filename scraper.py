@@ -65,6 +65,12 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Optional Gemini model override for AI summaries.",
     )
+    parser.add_argument(
+        "--ai-context-chars-per-record",
+        type=int,
+        default=None,
+        help="Optional override for how many characters of PDF-derived context to send to Gemini per report result.",
+    )
     return parser.parse_args()
 
 
@@ -106,15 +112,15 @@ def main() -> int:
 
     try:
         started_at = time.perf_counter()
-        detailed_candidates = scraper.enrich_solicitations(
+        detailed_candidates = scraper.fetch_details_for_records(
             pre_ranked[:detail_candidate_count]
         )
         print(
-            f"Detail enrichment finished for {len(detailed_candidates)} candidates "
+            f"Detail lookup finished for {len(detailed_candidates)} candidates "
             f"in {time.perf_counter() - started_at:.1f}s"
         )
     except Exception as exc:  # pragma: no cover
-        print(f"Detail enrichment failed: {exc}", file=sys.stderr)
+        print(f"Detail lookup failed: {exc}", file=sys.stderr)
         return 1
 
     started_at = time.perf_counter()
@@ -135,15 +141,15 @@ def main() -> int:
 
     try:
         started_at = time.perf_counter()
-        pdf_candidates = scraper.enrich_solicitations_with_pdfs(
+        pdf_candidates = scraper.download_and_extract_pdfs_for_records(
             ranked[:pdf_candidate_count]
         )
         print(
-            f"PDF enrichment finished for {len(pdf_candidates)} candidates "
+            f"PDF extraction finished for {len(pdf_candidates)} candidates "
             f"in {time.perf_counter() - started_at:.1f}s"
         )
     except Exception as exc:  # pragma: no cover
-        print(f"PDF enrichment failed: {exc}", file=sys.stderr)
+        print(f"PDF extraction failed: {exc}", file=sys.stderr)
         return 1
 
     pdf_by_id = {
@@ -165,10 +171,59 @@ def main() -> int:
         reverse=True,
     )
     print(f"Final scoring finished in {time.perf_counter() - started_at:.1f}s")
+    live_refresh_count = min(len(final_ranked), max(args.top_n * 2, 40))
+    started_at = time.perf_counter()
+    refreshed_finalists = scraper.fetch_details_for_records(
+        final_ranked[:live_refresh_count],
+        use_cache=False,
+    )
+    refreshed_by_id = {
+        solicitation.solicitation_id: solicitation for solicitation in refreshed_finalists
+    }
+    refreshed_candidates = [
+        refreshed_by_id.get(solicitation.solicitation_id, solicitation)
+        for solicitation in final_ranked
+    ]
+    final_ranked = sorted(
+        [score_solicitation(solicitation) for solicitation in refreshed_candidates],
+        key=lambda item: (
+            item.relevance_score,
+            item.posting_date or "",
+            item.due_datetime or "",
+        ),
+        reverse=True,
+    )
+    print(
+        f"Live detail refresh finished for {len(refreshed_finalists)} finalists "
+        f"in {time.perf_counter() - started_at:.1f}s"
+    )
     top_results = final_ranked[: args.top_n]
 
     if args.enable_ai_summaries:
-        summarizer = GeminiSummarizer(model=args.gemini_model)
+        started_at = time.perf_counter()
+        top_results = scraper.download_and_extract_pdfs_for_records(
+            top_results,
+            use_cache=True,
+        )
+        top_results = sorted(
+            [score_solicitation(solicitation) for solicitation in top_results],
+            key=lambda item: (
+                item.relevance_score,
+                item.posting_date or "",
+                item.due_datetime or "",
+            ),
+            reverse=True,
+        )[: args.top_n]
+        print(
+            f"Final-report PDF refresh finished for {len(top_results)} results "
+            f"in {time.perf_counter() - started_at:.1f}s"
+        )
+
+    if args.enable_ai_summaries:
+        summarizer = GeminiSummarizer(
+            model=args.gemini_model,
+            context_chars_per_record=args.ai_context_chars_per_record,
+        )
         if not summarizer.enabled:
             print(
                 "AI summaries were requested but GEMINI_API_KEY was not provided.",

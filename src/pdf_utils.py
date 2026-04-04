@@ -108,11 +108,12 @@ def download_attachment(
     solicitation_id: str,
     base_dir: Path,
     timeout_seconds: int,
+    use_cache: bool = True,
 ) -> Path:
     target_path = build_attachment_path(base_dir, solicitation_id, attachment)
     target_path.parent.mkdir(parents=True, exist_ok=True)
 
-    if target_path.exists() and target_path.stat().st_size > 0:
+    if use_cache and target_path.exists() and target_path.stat().st_size > 0:
         return target_path
 
     response = session.get(attachment.url, timeout=timeout_seconds)
@@ -157,6 +158,7 @@ def extract_attachment_pdf(
     solicitation_id: str,
     base_dir: Path,
     timeout_seconds: int,
+    use_cache: bool = True,
 ) -> tuple[Attachment, str]:
     updated = Attachment(
         name=attachment.name,
@@ -176,9 +178,10 @@ def extract_attachment_pdf(
             solicitation_id=solicitation_id,
             base_dir=base_dir,
             timeout_seconds=timeout_seconds,
+            use_cache=use_cache,
         )
         updated.local_path = str(target_path)
-        cached_extraction = load_cached_pdf_extraction(target_path)
+        cached_extraction = load_cached_pdf_extraction(target_path) if use_cache else None
         if cached_extraction is not None:
             pdf_text, status, is_scanned, page_count = cached_extraction
         else:
@@ -232,11 +235,12 @@ def summarize_pdf_extraction(record: Solicitation) -> str:
     return ". ".join(parts) + "."
 
 
-def enrich_solicitation_pdfs(
+def download_and_extract_solicitation_pdfs(
     session: requests.Session,
     record: Solicitation,
     base_dir: Path,
     timeout_seconds: int,
+    use_cache: bool = True,
 ) -> Solicitation:
     if not record.attachment_urls:
         record.pdf_extraction_summary = "No attachments to inspect."
@@ -252,6 +256,7 @@ def enrich_solicitation_pdfs(
             solicitation_id=record.solicitation_id,
             base_dir=base_dir,
             timeout_seconds=timeout_seconds,
+            use_cache=use_cache,
         )
         updated_attachments.append(updated_attachment)
         if pdf_text:

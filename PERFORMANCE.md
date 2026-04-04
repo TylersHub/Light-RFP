@@ -20,8 +20,8 @@ The scraper now uses this staged flow:
 
 1. Fetch the full open ESBD listing set from the live paginated service.
 2. Score the full listing set.
-3. Detail-enrich a large shortlist of likely contenders.
-4. Re-score that enriched shortlist.
+3. Look up full details for a large shortlist of likely contenders.
+4. Re-score that shortlist using the additional detail.
 5. Download and parse PDFs for a smaller top-tier subset.
 6. Re-score again with PDF text included.
 7. Generate AI summaries only for the final top-20 report results when enabled.
@@ -35,9 +35,9 @@ This keeps full listing coverage while limiting the expensive detail, PDF, and A
 
 The ESBD listing service is paginated, so fetching all open solicitations serially was taking most of the runtime by itself. The scraper now fetches page 1 first to discover the total number of pages, then requests the remaining pages in parallel and restores the original page order before continuing.
 
-### Single-pass detail enrichment plus local caching
+### Single-pass detail lookup plus local caching
 
-Detail enrichment now does one structured detail fetch per solicitation instead of looping over the same payload repeatedly. Successful detail payloads are cached locally under `data/processed/detail_cache/` for a limited time, so repeated runs do not keep re-requesting unchanged records.
+Detail lookup now does one structured detail fetch per solicitation instead of looping over the same payload repeatedly. Successful detail payloads are cached locally under `data/processed/detail_cache/` for a limited time, so repeated runs do not keep re-requesting unchanged records.
 
 ### Cached PDF extraction results
 
@@ -64,7 +64,7 @@ That makes the AI step faster and reduces needless retries.
 ## Why the optimizations are still safe
 
 - The scraper still analyzes the full live open listing set from ESBD.
-- Detail enrichment still happens before final output for a much larger set than the final 20.
+- Detail lookup still happens before final output for a much larger set than the final 20.
 - PDF extraction still happens before the final ranking is locked.
 - Cached detail and PDF data are only reused for a limited time, which keeps repeat runs fast without making the scraper permanently stale.
 - If a parallel page fetch fails, the scraper falls back to refetching that page directly.
@@ -84,8 +84,8 @@ One representative live run printed these stage timings:
 
 - listing collection: `8.5s`
 - initial scoring: `0.7s`
-- detail enrichment: `0.1s`
-- PDF enrichment: `0.6s`
+- detail lookup: `0.1s`
+- PDF extraction: `0.6s`
 - final scoring: `4.5s`
 - AI summarization for 20 report results: `11.0s`
 
@@ -95,4 +95,4 @@ Exact runtimes will vary with network conditions, the number of currently open E
 
 - The first run on a clean machine is still slower than a repeat run because it has to build the detail and PDF caches.
 - Cached data is intentionally temporary, so repeat-run speed comes from reusing recent work rather than pretending the source never changes.
-- The shortlist-first design is a practical performance choice, but it assumes the strongest early relevance signals are already visible in listing metadata before full enrichment.
+- The shortlist-first design is a practical performance choice, but it assumes the strongest early relevance signals are already visible in listing metadata before full detail lookup.

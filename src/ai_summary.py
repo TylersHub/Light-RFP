@@ -633,6 +633,7 @@ class GeminiSummarizer:
         self,
         api_key: str | None = None,
         model: str | None = None,
+        context_chars_per_record: int | None = None,
     ) -> None:
         self.api_key = api_key or os.getenv("GEMINI_API_KEY", "").strip()
         self.model = (model or os.getenv("GEMINI_MODEL", "")).strip() or DEFAULT_GEMINI_MODEL
@@ -640,7 +641,9 @@ class GeminiSummarizer:
         self.min_interval_seconds = AI_SUMMARY_MIN_INTERVAL_SECONDS
         self.max_retries = AI_SUMMARY_MAX_RETRIES
         self.batch_size = AI_SUMMARY_BATCH_SIZE
-        self.context_chars_per_record = AI_SUMMARY_CONTEXT_CHARS_PER_RECORD
+        self.context_chars_per_record = (
+            context_chars_per_record or AI_SUMMARY_CONTEXT_CHARS_PER_RECORD
+        )
         self._last_request_at = 0.0
         self.cache_path = Path(AI_SUMMARY_CACHE_PATH)
         self.cache = self._load_cache()
