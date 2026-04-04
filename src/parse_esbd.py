@@ -98,6 +98,21 @@ def html_to_text(value: str) -> str:
     return normalize_whitespace(soup.get_text(" ", strip=True))
 
 
+def html_to_display_text(value: str) -> str:
+    if not value:
+        return ""
+
+    soup = BeautifulSoup(value, "lxml")
+    for tag in soup.find_all(["br"]):
+        tag.replace_with("\n")
+
+    lines = [
+        normalize_whitespace(line)
+        for line in soup.get_text("\n", strip=True).splitlines()
+    ]
+    return "\n".join(line for line in lines if line)
+
+
 def parse_service_listing_response(
     payload: dict,
     base_url: str,
@@ -171,7 +186,7 @@ def parse_detail_page(
         if not label_tag or not rich_text:
             continue
         label = normalize_whitespace(label_tag.get_text(" ", strip=True)).rstrip(":")
-        value = normalize_whitespace(rich_text.get_text(" ", strip=True))
+        value = html_to_display_text(str(rich_text))
         if label == "Solicitation Description":
             description = value
         elif label == "Addendum":
@@ -222,8 +237,8 @@ def parse_detail_page(
             status,
             agency_name,
             category_classification,
-            description,
-            addendum_text,
+            normalize_whitespace(description),
+            normalize_whitespace(addendum_text),
             " ".join(attachment.name for attachment in attachments),
             " ".join(attachment.description for attachment in attachments),
         ]
@@ -278,8 +293,8 @@ def parse_detail_payload(payload: dict, fallback: Solicitation, base_url: str) -
     due_time = normalize_whitespace(payload.get("responseTime", "")) or fallback.due_time
     due_datetime = safe_parse_date(f"{due_date} {due_time}".strip())
     category_classification = normalize_whitespace(payload.get("nigpCodes", "")) or fallback.category_classification
-    description = html_to_text(payload.get("description", ""))
-    addendum_text = html_to_text(payload.get("addendum", ""))
+    description = html_to_display_text(payload.get("description", ""))
+    addendum_text = html_to_display_text(payload.get("addendum", ""))
 
     attachments: list[Attachment] = []
     for attachment in payload.get("attachments", []) or []:
@@ -304,8 +319,8 @@ def parse_detail_payload(payload: dict, fallback: Solicitation, base_url: str) -
             status,
             agency_name,
             category_classification,
-            description,
-            addendum_text,
+            normalize_whitespace(description),
+            normalize_whitespace(addendum_text),
             " ".join(attachment.name for attachment in attachments),
             " ".join(attachment.description for attachment in attachments),
         ]

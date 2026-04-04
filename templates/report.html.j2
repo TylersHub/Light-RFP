@@ -28,6 +28,10 @@
         .card-title a { color:var(--ink); text-decoration:none; }
         .card-title a:hover { color:var(--accent); }
         .card-subtitle { margin-top:10px; color:var(--muted); font-size:0.98rem; line-height:1.5; }
+        .description-text { color:var(--muted); font-size:0.98rem; line-height:1.6; white-space:pre-line; }
+        .description-text.is-collapsed { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3; overflow:hidden; }
+        .description-toggle { margin-top:6px; padding:0; border:none; background:none; color:var(--accent); cursor:pointer; font-weight:bold; font-size:0.9rem; font-family:inherit; line-height:1.2; }
+        .description-toggle:hover { text-decoration:underline; }
         .badges { display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; align-items:flex-start; }
         .badge { display:inline-flex; align-items:center; padding:7px 11px; border-radius:999px; font-size:0.86rem; font-weight:bold; background:var(--accent-soft); color:var(--accent); line-height:1; white-space:nowrap; }
         .badge.score { background:#e5f2e7; color:var(--good); }
@@ -79,8 +83,19 @@
                     <div class="title-row">
                         <div class="rank-badge">#{{ loop.index }}</div>
                         <div class="card-title">
+                            {% set full_description = item.description or item.brief_description or "No description available." %}
                             <h2><a href="{{ item.detail_url }}">{{ item.title }}</a></h2>
-                            <p class="card-subtitle">{{ item.brief_description or "No description available." }}</p>
+                            <div class="card-subtitle">
+                                <div class="description-text is-collapsed" id="description-text-{{ loop.index }}">{{ full_description }}</div>
+                                {% if full_description|length > 240 %}
+                                <button
+                                    type="button"
+                                    class="description-toggle"
+                                    data-description-target="{{ loop.index }}"
+                                    aria-expanded="false"
+                                >Read more</button>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
                     <div class="badges">
@@ -184,5 +199,27 @@
             <p>This implementation favors a straightforward HTTP-first scraper because the required ESBD data is available through the public site and its live JSON services without browser automation. For a smaller high-confidence subset of candidates, the scraper also downloads PDF attachments, classifies them as text-based or likely scanned based on extractable text, and folds extracted PDF text back into ranking. If a Gemini API key is supplied, the final results can also include AI-generated summaries based on that PDF text.</p>
         </section>
     </div>
+    <script>
+        document.querySelectorAll(".description-toggle").forEach(function (button) {
+            button.addEventListener("click", function () {
+                var target = button.getAttribute("data-description-target");
+                var description = document.getElementById("description-text-" + target);
+                if (!description) {
+                    return;
+                }
+
+                var isExpanded = button.getAttribute("aria-expanded") === "true";
+                if (isExpanded) {
+                    description.classList.add("is-collapsed");
+                    button.textContent = "Read more";
+                    button.setAttribute("aria-expanded", "false");
+                } else {
+                    description.classList.remove("is-collapsed");
+                    button.textContent = "Read less";
+                    button.setAttribute("aria-expanded", "true");
+                }
+            });
+        });
+    </script>
 </body>
 </html>
