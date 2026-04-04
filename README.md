@@ -135,6 +135,8 @@ After the script finishes, open:
 
 The scraper prints stage timings while it runs so you can see where time is being spent. The first run on a clean machine, or the first run after cache expiry, is slower because it rebuilds local caches under `data/processed/` and `data/pdfs/`. Repeat runs are usually much faster.
 
+So if the first run takes a little longer than expected, that is normal. Later runs are typically faster because the scraper can reuse those short-lived caches.
+
 ## Quick Start
 
 ```
