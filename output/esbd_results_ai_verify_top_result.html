@@ -68,41 +68,61 @@
             <h1>LightRFP ESBD Opportunity Report</h1>
             <p class="subtitle">
                 Ranked government solicitation matches from the Texas Electronic State Business Daily.
-                Generated at {{ generated_at|display_datetime }} from live data at <a href="{{ source_url }}">{{ source_url }}</a>.
+                Generated at Apr 8, 2026 1:43 PM from live data at <a href="https://www.txsmartbuy.gov/esbd">https://www.txsmartbuy.gov/esbd</a>.
             </p>
             <div class="stats">
                 <div class="stat"><span class="stat-label">Source</span><span class="stat-value">ESBD</span></div>
-                <div class="stat"><span class="stat-label">Candidates Analyzed</span><span class="stat-value">{{ total_candidates }}</span></div>
-                <div class="stat"><span class="stat-label">Results Shown</span><span class="stat-value">{{ results|length }} / {{ top_n }}</span></div>
+                <div class="stat"><span class="stat-label">Candidates Analyzed</span><span class="stat-value">587</span></div>
+                <div class="stat"><span class="stat-label">Results Shown</span><span class="stat-value">1 / 1</span></div>
             </div>
         </section>
         <div class="results">
-            {% for item in results %}
+            
             <article class="card">
                 <div class="card-head">
                     <div class="title-row">
-                        <div class="rank-badge">#{{ loop.index }}</div>
+                        <div class="rank-badge">#1</div>
                         <div class="card-title">
-                            {% set full_description = item.description or item.brief_description or "No description available." %}
-                            <h2><a href="{{ item.detail_url }}">{{ item.title }}</a></h2>
+                            
+                            <h2><a href="https://www.txsmartbuy.gov/esbd/23-04203-08">2026 Task Order Contract for the Street Rehabilitation Package 8</a></h2>
                             <div class="card-subtitle">
-                                <div class="description-text is-collapsed" id="description-text-{{ loop.index }}">{{ full_description }}</div>
-                                {% if full_description|length > 240 %}
+                                <div class="description-text is-collapsed" id="description-text-1">Solicitation Type and Name:
+Formal Invitation for Bids for 2026 Task Order Contract for the Street Rehabilitation Package 8
+Solicitation Number: 23-04203-08
+Description: Project construction may include but is not limited to: asphalt milling and overlay, seal coat, base and pavement replacement, cleaning and sealing joints and cracks, curb ramps, concrete curbs, sidewalks, driveways, concrete retaining walls-combination type, speed humps, topsoil, sodding, signage, pavement markings installation, adjusting existing valve boxes, meter boxes and manholes, and any other items required due to the site conditions to accomplish the project scope.
+Applicable Product Categories:
+- 57076 – Steel, Reinforcing, Bars and Rods
+- 74521 – Asphaltic Concrete, Hot Laid including Bituminous Materials
+- 75070 – Ready-Mix Concrete
+- 91350 – Construction, Street (Major & Residential) (Includes Reconstruction)
+- 91347 – Construction, Sidewalk and Driveway, Including Pedestrian and Handicap
+Date Issued: March 20, 2026
+Due Date & Time: April 21, 2026, 2:00 p.m. Central Time
+Pre-Bid Conference: Pre-Bid Conference will be held at 10:00 a.m., Central Time, on March 26, 2026, via WebEx. Attendance at the Pre-Bid Conference is optional, but highly encouraged.
+Respondents may call the toll-free number listed below and enter access code to participate the day of the conference.
+Dial-In Number: 1-415-655-0001 | Access Code: 2331 931 6407 | Meeting Password: xtQ257KJVyf
+Join from the meeting link: https://sanantonio.webex.com/sanantonio/j.php?MTID=m9b58d9b3d9e208d356acc952f0f7cfc1
+To view this solicitation, go to https://www.civcastusa.com/bids and search under SAP Project ID number or project name.</div>
+                                
                                 <button
                                     type="button"
                                     class="description-toggle"
-                                    data-description-target="{{ loop.index }}"
+                                    data-description-target="1"
                                     aria-expanded="false"
                                 >Read more</button>
-                                {% endif %}
+                                
                             </div>
                         </div>
                     </div>
                     <div class="badges">
-                        <span class="badge score">Score <span class="score-value">&nbsp;{{ "%.2f"|format(item.relevance_score) }}</span></span>
-                        {% for category in item.matched_categories %}
-                        <span class="badge">{{ category }}</span>
-                        {% endfor %}
+                        <span class="badge score">Score <span class="score-value">&nbsp;74.00</span></span>
+                        
+                        <span class="badge">Concrete</span>
+                        
+                        <span class="badge">General Contractors</span>
+                        
+                        <span class="badge">Asphalt</span>
+                        
                     </div>
                 </div>
                 <div class="card-body">
@@ -112,31 +132,31 @@
                             <div class="detail-grid">
                                 <div class="detail-item">
                                     <strong>Solicitation ID</strong>
-                                    <span>{{ item.solicitation_id }}</span>
+                                    <span>23-04203-08</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Agency</strong>
-                                    <span>{{ item.agency_name or item.agency_number }}</span>
+                                    <span>City of San Antonio - M0152</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Status</strong>
-                                    <span>{{ item.status }}</span>
+                                    <span>Posted</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Posted</strong>
-                                    <span>{{ item.posting_date|display_date }}</span>
+                                    <span>Mar 20, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Date</strong>
-                                    <span>{{ item.due_date|display_date if item.due_date else "Not listed" }}</span>
+                                    <span>Apr 21, 2026</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Due Time</strong>
-                                    <span>{{ item.due_time or "Not listed" }}</span>
+                                    <span>2:00 PM</span>
                                 </div>
                             </div>
                             <div class="links">
-                                <a class="link-chip" href="{{ item.detail_url }}">Open ESBD Listing</a>
+                                <a class="link-chip" href="https://www.txsmartbuy.gov/esbd/23-04203-08">Open ESBD Listing</a>
                             </div>
                         </section>
                         <section class="panel">
@@ -144,59 +164,59 @@
                             <div class="detail-grid">
                                 <div class="detail-item">
                                     <strong>Contact</strong>
-                                    <span>{{ item.contact_name or "Not listed" }}</span>
+                                    <span>Michelle Birch</span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Email</strong>
-                                    {% set email = item.contact_email or item.bid_response_email %}
-                                    <span>{% if email %}<a href="mailto:{{ email }}">{{ email }}</a>{% else %}Not listed{% endif %}</span>
+                                    
+                                    <span><a href="mailto:michelle.birch@sanantonio.gov">michelle.birch@sanantonio.gov</a></span>
                                 </div>
                                 <div class="detail-item">
                                     <strong>Phone</strong>
-                                    {% set phone = item.contact_phone %}
-                                    <span>{% if phone %}<a href="tel:{{ phone|replace('(', '')|replace(')', '')|replace(' ', '')|replace('-', '') }}">{{ phone }}</a>{% else %}Not listed{% endif %}</span>
+                                    
+                                    <span><a href="tel:2102078642">(210) 207-8642</a></span>
                                 </div>
                             </div>
                         </section>
                     </div>
                     <section class="panel">
                         <h3 class="section-title">Classification</h3>
-                        <p class="classification">{{ item.category_classification or "Not listed" }}</p>
+                        <p class="classification">57076-Steel, Reinforcing, Bars And Rods; 74521-Asphaltic Concrete, Hot Laid Including Bituminous Materials; 75070-Ready-Mix Concrete (See 150-12 For Bagged Concrete); 91350-Construction, Street (Major And Residential)(Includes Reconstruction); 91347-Construction, Sidewalk And Driveway (Includes Pedestrian And Handicap Ramps);</p>
                     </section>
-                    {% if item.ai_summary %}
+                    
                     <section class="panel">
                         <h3 class="section-title">AI Summary</h3>
-                        <p class="classification">{{ item.ai_summary }}</p>
+                        <p class="classification">The City of San Antonio seeks contractors for a comprehensive street rehabilitation project that encompasses asphalt milling and overlay work, pavement and base replacement, seal coating, and joint sealing activities across multiple roadway locations. The scope also includes construction of concrete infrastructure such as curbs, sidewalks, driveways, and ADA-compliant ramps, along with installation of speed humps, pavement markings, signage, and adjustments to existing utility infrastructure including valve boxes and manholes.</p>
                     </section>
-                    {% endif %}
-                    {% if item.attachment_urls %}
+                    
+                    
                     <section class="panel attachments">
                         <h3 class="section-title">Attachments</h3>
-                        {% if item.pdf_extraction_summary %}
-                        <p class="classification">{{ item.pdf_extraction_summary }}</p>
-                        {% endif %}
+                        
+                        <p class="classification">1 PDF attachment(s) found. 1 text-based.</p>
+                        
                         <ul class="list">
-                            {% for attachment in item.attachment_urls %}
+                            
                             <li>
-                                <a href="{{ attachment.url }}">{{ attachment.name }}</a>
-                                {% if attachment.description %} - {{ attachment.description }}{% endif %}
-                                {% if attachment.is_pdf and attachment.pdf_extraction_status %}
-                                <div><strong>PDF Extraction:</strong> {{ attachment.pdf_extraction_status }}{% if attachment.pdf_page_count %} | {{ attachment.pdf_page_count }} page(s){% endif %}</div>
-                                {% endif %}
+                                <a href="https://www.txsmartbuy.gov/core/media/media.nl?id=32861834&c=852252&h=vvMn4_UXjcZvtmXSbk2Sfb5duoPMVszY7myz93Z_0ieUCHcI&_xt=.pdf">ESBD_498781_1774030906671_Solicitation Synopsis Non-Discretionary.pdf</a>
+                                 - Solicitation Synopsis
+                                
+                                <div><strong>PDF Extraction:</strong> Text extracted | 1 page(s)</div>
+                                
                             </li>
-                            {% endfor %}
+                            
                         </ul>
                     </section>
-                    {% endif %}
+                    
                 </div>
             </article>
-            {% endfor %}
+            
         </div>
         <section class="section">
             <h2>Methodology</h2>
             <p>This report uses the live paginated ESBD backend service to collect the full current open-solicitation result set, scores that full listing set, and then looks up a generous shortlist through the ESBD details service to extract required fields such as title, solicitation ID, contact information, posting date, due date, classification, and attachment links.</p>
             <p>Relevance is determined by weighted keyword and fuzzy matching against the vendor service categories from the take-home brief. Matches in solicitation titles and classification codes count more heavily than weaker description-only signals, while clearly unrelated terms such as software-only or legal-service signals are penalized.</p>
-            <p>This implementation favors a straightforward HTTP-first scraper because the required ESBD data is available through the public site and its live JSON services without browser automation. For a smaller high-confidence subset of candidates, the scraper also downloads PDF attachments, classifies them as text-based or likely scanned based on extractable text, and folds extracted PDF text back into ranking. If an Anthropic API key is supplied, the final results can also include AI-generated summaries based on full solicitation context such as the listing metadata, description, addendum, attachment details, and extracted PDF text when available.</p>
+            <p>This implementation favors a straightforward HTTP-first scraper because the required ESBD data is available through the public site and its live JSON services without browser automation. For a smaller high-confidence subset of candidates, the scraper also downloads PDF attachments, classifies them as text-based or likely scanned based on extractable text, and folds extracted PDF text back into ranking. If a Gemini API key is supplied, the final results can also include AI-generated summaries based on that PDF text.</p>
         </section>
     </div>
     <script>

@@ -9,7 +9,7 @@ Command-line scraper for the LightRFP take-home assessment. It fetches live ESBD
 - Uses the ESBD details service to look up the strongest candidates and collect the required metadata
 - Downloads PDF bid attachments for a shortlist of strong candidates
 - Extracts text from text-based PDFs and flags PDFs that appear to be scanned or image-based
-- Optionally generates AI summaries from extracted PDF text when a Gemini API key is provided
+- Optionally generates AI summaries from full solicitation content when an Anthropic API key is provided
 - Only generates summaries for the final report results, not every candidate examined during scraping
 - Reuses short-lived cached ESBD detail payloads and cached PDF extraction results on repeat runs for much faster performance
 - Scores each opportunity against the LightRFP vendor-service categories
@@ -64,11 +64,11 @@ To use AI summaries, create a `.env` file in the project root and copy the forma
 
 `.env.example`
 
-Then add your Gemini settings:
+Then add your Anthropic settings:
 
 ```env
-GEMINI_API_KEY=your_api_key_here
-GEMINI_MODEL=gemini-2.5-flash
+ANTHROPIC_API_KEY=your_api_key_here
+CLAUDE_MODEL=claude-sonnet-4-20250514
 ```
 
 ### 6. Run the scraper
@@ -91,11 +91,11 @@ Useful AI flag:
 python scraper.py --enable-ai-summaries --ai-context-chars-per-record 5000
 ```
 
-`--ai-context-chars-per-record` controls how much PDF-derived context is sent to Gemini for each final report result.
+`--ai-context-chars-per-record` controls how much solicitation context is sent to Claude for each final report result.
 
 ### 7. Optional: enable AI summaries
 
-PDF extraction runs automatically. AI summaries are optional and only run when `--enable-ai-summaries` is used and a Gemini API key is available.
+PDF extraction runs automatically. AI summaries are optional and only run when `--enable-ai-summaries` is used and an Anthropic API key is available.
 
 If you created a `.env` file in Step 5, you can usually just run:
 
@@ -108,21 +108,21 @@ You can also set the API key directly in the terminal for one session:
 In PowerShell:
 
 ```powershell
-$env:GEMINI_API_KEY="your_api_key_here"
+$env:ANTHROPIC_API_KEY="your_api_key_here"
 python scraper.py --enable-ai-summaries
 ```
 
 In Command Prompt:
 
 ```bat
-set GEMINI_API_KEY=your_api_key_here
+set ANTHROPIC_API_KEY=your_api_key_here
 python scraper.py --enable-ai-summaries
 ```
 
 Optional model override:
 
 ```powershell
-python scraper.py --enable-ai-summaries --gemini-model gemini-2.5-flash
+python scraper.py --enable-ai-summaries --claude-model claude-sonnet-4-20250514
 ```
 
 If no API key is supplied, the scraper still runs successfully, but AI summaries are skipped.
@@ -153,7 +153,7 @@ I began with the public ESBD page specified in the assignment: `https://www.txsm
 
 The scraper requests every page of currently open ESBD solicitations from the live listing service, scores the full live open-solicitation set, looks up a generous shortlist of the strongest candidates through the ESBD details service, and then downloads PDF attachments for a smaller top-tier subset before producing the final top 20. It also performs one final PDF refresh for the final report results so the ranked output stays consistent whether AI summaries are enabled or not. Listing-page collection runs in parallel so the full open set can still be analyzed without waiting on a long serial page walk. The score uses weighted keyword and fuzzy matching across title, classification, description, attachment names, and extracted PDF text, then applies penalties to clearly unrelated software-only, medical, legal, or insurance-oriented bids.
 
-When `--enable-ai-summaries` is used and `GEMINI_API_KEY` is set, the scraper sends extracted PDF text only for the final report results to the Gemini API to generate concise two-sentence summaries. To keep the runtime reasonable and avoid quota spikes, the scraper batches multiple final-report solicitations into each Gemini request and rate-limits those batch requests. Detail payloads and PDF extraction results are also cached locally under `data/processed/` and `data/pdfs/` so repeat runs do not keep redoing the same work. This AI step is optional so the project remains runnable end-to-end without requiring paid API access.
+When `--enable-ai-summaries` is used and `ANTHROPIC_API_KEY` is set, the scraper sends full final-report solicitation context to the Anthropic Messages API to generate concise two-sentence summaries. That context can include listing metadata, the solicitation description, addendum text, attachment information, and extracted PDF text when available. The scraper rate-limits these requests and caches successful summaries locally under `data/processed/` so repeat runs do not keep redoing the same work. This AI step is optional so the project remains runnable end-to-end without requiring paid API access.
 
 Current trade-offs:
 
@@ -161,7 +161,7 @@ Current trade-offs:
 - PDF extraction only runs on a smaller high-confidence subset for performance reasons, so attachment text is not collected for every open solicitation.
 - Detail and PDF caches are intentionally short-lived so repeat runs stay fast without drifting too far from the live site.
 - Scanned or image-based PDFs are detected heuristically by extractable-text density, but this project does not OCR them yet.
-- AI summaries are optional and depend on the presence of a Gemini API key.
+- AI summaries are optional and depend on the presence of an Anthropic API key.
 - Summary quality still depends on the quality of the attached PDFs; forms, standard terms, and boilerplate-heavy packages can produce weaker summaries than solicitations with a clear scope-of-work document.
 - The scraper discovers the ESBD service path from the live site bundle and falls back to a known service path, but a major Texas SmartBuy frontend redesign could still require a small update.
 
