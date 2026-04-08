@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 import time
 
-from src.ai_summary import GeminiSummarizer
+from src.ai_summary import ClaudeSummarizer
 from src.config import (
     DETAIL_CANDIDATE_MULTIPLIER,
     MIN_DETAIL_CANDIDATES,
@@ -59,18 +59,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--enable-ai-summaries",
         action="store_true",
-        help="Generate AI summaries from extracted PDF text using the Gemini API.",
+        help="Generate AI summaries from solicitation content using the Anthropic Claude API.",
     )
     parser.add_argument(
-        "--gemini-model",
+        "--claude-model",
         default=None,
-        help="Optional Gemini model override for AI summaries.",
+        help="Optional Claude model override for AI summaries.",
     )
     parser.add_argument(
         "--ai-context-chars-per-record",
         type=int,
         default=None,
-        help="Optional override for how many characters of PDF-derived context to send to Gemini per report result.",
+        help="Optional override for how many characters of solicitation context to send to Claude per report result.",
     )
     return parser.parse_args()
 
@@ -190,13 +190,13 @@ def main() -> int:
     )
 
     if args.enable_ai_summaries:
-        summarizer = GeminiSummarizer(
-            model=args.gemini_model,
+        summarizer = ClaudeSummarizer(
+            model=args.claude_model,
             context_chars_per_record=args.ai_context_chars_per_record,
         )
         if not summarizer.enabled:
             print(
-                "AI summaries were requested but GEMINI_API_KEY was not provided.",
+                "AI summaries were requested but ANTHROPIC_API_KEY was not provided.",
                 file=sys.stderr,
             )
         else:
