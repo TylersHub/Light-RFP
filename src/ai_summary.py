@@ -63,27 +63,32 @@ def finalize_summary_text(text: str) -> str:
     return summary
 
 
-def summary_copies_source(summary: str, record: Solicitation) -> bool:
-    summary_clean = clean_summary_text(summary).lower()
+def summary_is_verbatim_source(summary: str, record: Solicitation) -> bool:
+    summary_clean = clean_summary_text(summary)
     if not summary_clean:
         return True
+
+    lowered_summary = summary_clean.lower()
+    if len(lowered_summary) < 80:
+        return False
 
     source_candidates = [
         record.brief_description,
         record.description,
         record.addendum_text,
-        record.title,
-        record.raw_text_blob,
-        record.pdf_text_blob[:8000],
+        record.pdf_text_blob[:12000],
     ]
-    best_ratio = 0
     for source in source_candidates:
-        source_clean = normalize_whitespace(source).lower()
+        source_clean = normalize_whitespace(source)
         if not source_clean:
             continue
-        best_ratio = max(best_ratio, fuzz.token_set_ratio(summary_clean, source_clean))
+        lowered_source = source_clean.lower()
+        if lowered_summary in lowered_source:
+            return True
+        if fuzz.ratio(lowered_summary, lowered_source) >= 98:
+            return True
 
-    return best_ratio >= 92
+    return False
 
 
 def compact_text(value: str, max_chars: int) -> str:
@@ -350,6 +355,7 @@ def build_summary_prompt(record: Solicitation, context: str) -> str:
         "- Use the solicitation description, addendum, attachment information, and extracted PDF text when available.\n"
         "- Prefer the most concrete scope details over administrative or legal boilerplate.\n"
         "- Paraphrase the content instead of copying sentences from the source.\n"
+        "- Do not simply restate the title or reuse the first sentence of the solicitation description.\n"
         "- Do not mention that the summary came from PDF text or extracted documents.\n"
         "- Do not use bullets, labels, markdown, JSON, or quotation marks.\n\n"
         f"{context}"
@@ -399,7 +405,7 @@ class ClaudeSummarizer:
         )
 
     def _cache_key(self, record: Solicitation) -> str:
-        cache_version = "v6"
+        cache_version = "v7"
         source_text = "\n".join(
             [
                 record.title,
@@ -424,7 +430,7 @@ class ClaudeSummarizer:
         item = self.cache.get(self._cache_key(record), {})
         summary = normalize_whitespace(str(item.get("summary", "")))
         finalized = finalize_summary_text(summary)
-        if not finalized or summary_copies_source(finalized, record):
+        if not finalized or summary_is_verbatim_source(finalized, record):
             return ""
         return finalized
 
@@ -519,11 +525,11 @@ class ClaudeSummarizer:
             try:
                 summary = self.request_summary(record, strict=False)
                 finalized = finalize_summary_text(summary)
-                if not finalized or summary_copies_source(finalized, record):
+                if not finalized or summary_is_verbatim_source(finalized, record):
                     summary = self.request_summary(record, strict=True)
                     finalized = finalize_summary_text(summary)
 
-                if finalized and not summary_copies_source(finalized, record):
+                if finalized:
                     record.ai_summary = finalized
                     record.ai_summary_model = self.model
                     record.ai_summary_error = ""

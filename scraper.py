@@ -87,6 +87,12 @@ def rank_solicitations(records: list[Solicitation]) -> list[Solicitation]:
     )
 
 
+def single_result_output_path(output_path: Path) -> Path:
+    if output_path.name == "esbd_results.html":
+        return output_path.with_name("esbd_top_result.html")
+    return output_path.with_name(f"{output_path.stem}_top_result.html")
+
+
 def main() -> int:
     load_local_env()
     args = parse_args()
@@ -216,8 +222,18 @@ def main() -> int:
         top_n=args.top_n,
         source_url=scraper.listing_url,
     )
+    if top_results:
+        render_report(
+            results=top_results[:1],
+            output_path=single_result_output_path(output_path),
+            total_candidates=len(pre_ranked),
+            top_n=1,
+            source_url=scraper.listing_url,
+        )
     print(f"HTML rendering finished in {time.perf_counter() - started_at:.1f}s")
     print(f"Wrote report to {output_path}")
+    if top_results:
+        print(f"Wrote single-result report to {single_result_output_path(output_path)}")
     print(f"Total runtime: {time.perf_counter() - overall_started_at:.1f}s")
     return 0
 
